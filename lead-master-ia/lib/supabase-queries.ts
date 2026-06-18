@@ -13,9 +13,8 @@ import * as mock from "./mock-data";
 // =====================================================================
 // CONFIG
 // =====================================================================
-// Nome real da tabela de leads no Supabase. Confirmado: "pistas".
-// Se algum dia virar "leads", basta trocar aqui.
-const TABELA_PISTAS = "pistas";
+// Nome real da tabela de leads no Supabase (auditoria 2026-06-18: tabela é "leads", não "pistas").
+const TABELA_PISTAS = "leads";
 
 // Paleta de cores das equipes (o banco não armazena cor; derivamos por ordem).
 const CORES_EQUIPE = ["#3B82F6", "#22C55E", "#D4A636", "#EF4444", "#8B5CF6"];

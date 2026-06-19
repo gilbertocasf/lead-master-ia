@@ -15,19 +15,65 @@ There is no test suite in this project.
 
 ---
 
-## Estado atual real
+## Definição do produto
 
-- O projeto foi gerado inicialmente como protótipo por IA (não foi construído manualmente do zero).
-- O Supabase foi criado manualmente **antes** de existir GitHub, VS Code ou Claude Code no projeto.
-- O GitHub foi criado depois do Supabase.
-- O projeto foi recuperado de um arquivo `lead-master-ia.tar.gz` e o repositório GitHub agora contém o projeto completo.
-- O app roda localmente em `http://localhost:3000` via `npm run dev`.
-- A Vercel está criada e conectada ao repositório, mas o deploy está retornando **404** — causa ainda não investigada.
-- **Não sabemos com certeza** se o app está usando Supabase real ou mock-data em produção. É necessário auditar o `.env.local` e as variáveis de ambiente na Vercel.
-- Muitos botões e interações da UI podem ser apenas visuais (sem lógica real por trás). Ainda não foram auditados.
-- O projeto está em fase de **auditoria e organização** — não de desenvolvimento ativo.
+**Lead Master IA é um distribuidor inteligente de leads para imobiliárias** — não um CRM genérico.
 
-### MCP Servers
+O diferencial competitivo é a distribuição automática com fila de plantão por equipe: lead entra via webhook ou formulário, o sistema roteia para a equipe correta e distribui para o corretor de plantão sem intervenção do gestor.
+
+Não tratar como CRM genérico. CRMs genéricos (RD Station, Pipedrive) não têm esse conceito de fila de plantão com múltiplas equipes. Esse é o diferencial do produto.
+
+---
+
+## Estado atual do projeto
+
+- App publicado na Vercel e conectado ao Supabase real
+- Leitura de dados real funcionando
+- Deploy Vercel resolvido (era problema de Root Directory — já corrigido)
+- Operações de escrita ainda não implementadas
+- A fase de auditorias estratégicas foi **concluída** (Fases 1 a 3.1-D)
+- A próxima fase é implementação da captura e distribuição de leads
+
+---
+
+## Fase atual: implementação
+
+As auditorias estratégicas foram concluídas. As decisões estão documentadas em:
+
+- `docs/DECISOES-ARQUITETURA.md` — decisões aprovadas de arquitetura
+- `docs/auditorias/` — análises detalhadas das fases anteriores
+
+**Antes de implementar qualquer funcionalidade, consultar esses documentos.**
+
+Não reabrir discussões sobre Vercel 404, Root Directory, ou mock-data vs. Supabase — essas questões foram resolvidas. Só revisitar se houver nova evidência concreta.
+
+---
+
+## Foco técnico imediato (Fases 4–6)
+
+Implementar nesta ordem:
+
+1. **Captura de leads** — formulário modal com campos mínimos + webhook `POST /api/leads`
+2. **Origem obrigatória** — campo `origem` obrigatório em toda entrada de lead
+3. **Deduplicação por telefone** — janela de 24h; se lead com mesmo telefone existir, não criar duplicata
+4. **Roteamento para equipe** — `equipe_id` no payload usa a equipe diretamente; sem `equipe_id`, rodízio entre equipes ativas
+5. **Distribuição automática para corretor** — round-robin com fairness (`ultimo_lead_recebido_em`)
+6. **Histórico do lead** — tabela `historico_leads` registra cada evento desde a entrada
+7. **Pipeline funcional** — mover lead entre status com registro de histórico e SLA visual
+
+---
+
+## Regras obrigatórias
+
+1. **Nunca alterar `schema.sql`** sem confirmação explícita do usuário.
+2. **Nunca alterar `package.json`** sem confirmação explícita do usuário.
+3. **Nunca fazer deploy ou push** sem confirmação explícita do usuário.
+4. Antes de implementar qualquer funcionalidade, consultar `docs/DECISOES-ARQUITETURA.md` e as auditorias relevantes.
+5. Antes de sugerir qualquer correção em código de aplicação, descrever o que será feito e aguardar autorização.
+
+---
+
+## MCP Servers
 
 | Servidor | Status |
 |----------|--------|
@@ -37,52 +83,27 @@ There is no test suite in this project.
 
 ---
 
-## Próximas prioridades
-
-1. Descobrir por que o deploy na Vercel está retornando 404.
-2. Confirmar se o app em produção usa Supabase real ou mock-data (checar variáveis de ambiente na Vercel).
-3. Auditar quais botões/ações da UI têm lógica real e quais são apenas visuais.
-4. Verificar o mismatch de nomes entre a tabela `pistas` (usada no código) e `leads` (definida no `supabase/schema.sql`).
-5. Só após a auditoria: decidir o que corrigir e em que ordem.
-
----
-
-## Regras obrigatórias antes de alterar código
-
-1. **Perguntar antes de alterar qualquer arquivo de aplicação** — o projeto está em auditoria, não em desenvolvimento.
-2. **Nunca alterar `schema.sql`** sem confirmação explícita do usuário.
-3. **Nunca alterar `package.json`** sem confirmação explícita do usuário.
-4. **Nunca fazer deploy ou push** sem confirmação explícita do usuário.
-5. Antes de sugerir qualquer correção, descrever o problema encontrado e aguardar autorização.
-6. Usar Context7 para consultar documentação de bibliotecas (Next.js, Supabase, Tailwind etc.) antes de responder com base em memória de treinamento.
-
----
-
 ## Riscos conhecidos
 
-- **Tabela `pistas` vs `leads`**: o código usa `TABELA_PISTAS = "pistas"` mas o schema define `leads`. Se o banco real usa um nome diferente do que o código espera, todas as queries falham silenciosamente e o app cai em mock-data sem avisar.
-- **Deploy 404 na Vercel**: causa desconhecida. Pode ser falta de variáveis de ambiente, configuração de rota, ou build quebrado.
-- **Botões visuais**: ações como "cadastrar lead", "mover no pipeline" etc. podem não ter implementação real — risco de o usuário assumir que o app funciona quando não funciona.
-- **Origem do projeto**: por ter sido gerado por IA como protótipo, partes do código podem ser inconsistentes ou incompletas sem sinalização óbvia.
-- **`.env.local` não versionado**: o Git não rastreia `.env.local`. Se o arquivo existir localmente com as chaves do Supabase, o app usa Supabase; se não existir, usa mock. O estado real de produção depende das variáveis configuradas na Vercel.
+- **Tabela `pistas` vs `leads`**: o código usa `TABELA_PISTAS = "pistas"` mas o schema define `leads`. Se o banco real usa `leads`, a constante precisa ser atualizada. Verificar antes de implementar escrita.
+- **Botões visuais**: ações como "cadastrar lead", "distribuir", "mover no pipeline" existem na UI mas não têm implementação real. São o principal alvo da próxima fase.
+- **Campos ausentes no schema**: o schema atual não tem `historico_leads`, `ultimo_lead_recebido_em` em `equipes` e `corretores`, nem `em_plantao` em `corretores`. Precisam ser adicionados via migration antes da implementação.
 
 ---
 
 ## O que não fazer agora
 
 - Não instalar Playwright MCP.
-- Não instalar Supabase MCP (ainda — avaliar quando a auditoria avançar).
-- Não alterar código da aplicação sem auditoria prévia.
-- Não criar novas páginas ou features.
-- Não refatorar código existente.
-- Não tentar "consertar" o 404 da Vercel sem antes entender a causa.
-- Não assumir que qualquer parte do app funciona corretamente sem verificação.
+- Não instalar Supabase MCP (ainda — avaliar quando a implementação avançar).
+- Não criar novas páginas ou features além das definidas no foco técnico imediato.
+- Não refatorar código existente sem autorização.
+- Não assumir que qualquer parte do app funciona sem verificar.
 
 ---
 
 ## Architecture
 
-**Lead Master IA** is a real-estate lead management platform built with Next.js 14 App Router, TypeScript, and Tailwind CSS. It has no external UI library — all icons are inline SVG.
+**Lead Master IA** is a real-estate lead distribution platform built with Next.js 14 App Router, TypeScript, and Tailwind CSS. It has no external UI library — all icons are inline SVG.
 
 ### Data layer (dual-mode)
 
@@ -93,7 +114,7 @@ The app runs in two modes decided at boot by the presence of env vars:
 
 `lib/supabase-queries.ts` is the single data access layer. Each `fetch*` function gracefully falls back to mock if Supabase is unavailable. Pages call `fetchTudo()` (a `Promise.all` over all four fetch functions) and pass the result to derived functions (`getKPIs`, `getRanking`, `getFunil`, `getProximoPlantao`).
 
-**Important naming mismatch**: the Supabase table for leads is called `pistas` (not `leads`). The constant `TABELA_PISTAS = "pistas"` in `supabase-queries.ts` centralizes this. The schema (`supabase/schema.sql`) defines a `leads` table — if the real DB uses `pistas`, the schema may need updating.
+**Important naming mismatch**: the Supabase table for leads is called `pistas` in the code (`TABELA_PISTAS = "pistas"`) but the schema defines a `leads` table. Verify the actual table name in the real DB before implementing write operations.
 
 ### Domain model (`lib/types.ts`)
 

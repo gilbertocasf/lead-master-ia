@@ -157,3 +157,37 @@ Não é um ou outro. Os dois precisam existir no MVP.
 - Não tem notificações push/WhatsApp no MVP
 - Não tem lead scoring com ML no MVP
 - Não tem pipeline drag-and-drop no MVP (mover status via dropdown é suficiente para V1)
+
+---
+
+## 14. Distribuição automática na criação do lead
+
+**Decisão:** Quando um lead entra no sistema (formulário ou webhook), o sistema tenta distribuir automaticamente para o corretor de plantão elegível **na mesma operação de criação**.
+
+- Se houver corretor disponível (`ativo = true`, `em_plantao = true`): lead sai com `corretor_id` e `distribuido_em` já preenchidos.
+- Se não houver: lead fica com `corretor_id = NULL` (fila). O botão "Distribuir" serve para redistribuição manual depois.
+
+O botão "Distribuir" **não é o fluxo principal** — é o fallback operacional.
+
+---
+
+## 15. Deduplicação por telefone: bloquear e informar
+
+**Decisão:** Mesmo número de telefone dentro de 24h → HTTP 409. Não cria duplicata silenciosa.
+
+Comportamento:
+- Normalizar telefone antes de comparar (remover máscara, espaços, caracteres não-numéricos).
+- Se duplicata: retornar `{ erro: 'duplicata', lead_existente: { id, nome, criadoEm } }`.
+- UI exibe: "Esse número já foi cadastrado ([nome], [X min atrás]). Abrir lead existente?" — sem botão de "criar mesmo assim".
+
+Janela de 24h cobre race conditions, cliques duplos e reenvios acidentais de webhook.
+
+---
+
+## 16. Lead sem equipe_id (webhook sem campanha mapeada): rodízio automático
+
+**Decisão:** Webhook sem `equipe_id` → selecionar a equipe que há mais tempo não recebe lead (`ORDER BY COALESCE(ultimo_lead_recebido_em, '1970-01-01') ASC`).
+
+- Formulário manual **mantém `equipe_id` como campo obrigatório** — esse caso não ocorre no formulário.
+- Nenhuma equipe cadastrada → HTTP 503 `sem_equipe_disponivel`.
+- Sem `equipes.ativa` no MVP — todas as equipes cadastradas participam do rodízio.

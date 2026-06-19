@@ -2,11 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  // Mock mode (sem env Supabase): nenhuma proteção de rota necessária.
+  // Sem env vars Supabase: verificar se é desenvolvimento ou produção.
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ) {
+    if (process.env.NODE_ENV === "production") {
+      // Produção mal-configurada: bloquear todo acesso.
+      return new NextResponse(
+        "Erro de configuração: variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não definidas.",
+        { status: 503 }
+      );
+    }
+    // Desenvolvimento local: mock mode, sem autenticação necessária.
     return NextResponse.next();
   }
 

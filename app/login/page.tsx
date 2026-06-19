@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { hasSupabaseEnv } from "@/lib/supabase";
+import { isMockMode } from "@/lib/supabase";
 import { login } from "./actions";
 
 export default async function LoginPage({
@@ -8,8 +8,8 @@ export default async function LoginPage({
 }: {
   searchParams: { error?: string };
 }) {
-  // Mock mode: sem Supabase, não há login — redireciona direto para o app.
-  if (!hasSupabaseEnv) redirect("/");
+  // Mock mode (dev local sem Supabase): redireciona direto para o app.
+  if (isMockMode) redirect("/");
 
   const sb = createSupabaseServer();
   const {

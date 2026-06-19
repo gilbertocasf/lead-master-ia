@@ -6,3 +6,8 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const hasSupabaseEnv = Boolean(url && anonKey);
+
+// Mock mode: só permitido em desenvolvimento local.
+// Em produção sem env vars → misconfiguration; o middleware bloqueia o acesso com 503.
+export const isMockMode =
+  !hasSupabaseEnv && process.env.NODE_ENV !== "production";

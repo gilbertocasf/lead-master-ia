@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Avatar } from "@/components/ui/Avatar";
+import { NovoLeadModal } from "@/components/NovoLeadModal";
 import {
   fetchTudo,
   getProximoPlantao,
@@ -27,14 +28,7 @@ export default async function LeadsPage() {
         eyebrow="Captação"
         title="Leads"
         description="O captador cadastra o lead já com a equipe de destino. O gerente daquela equipe distribui ao corretor de plantão."
-        action={
-          <button className="flex items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action/90">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Cadastrar lead
-          </button>
-        }
+        action={<NovoLeadModal equipes={equipes} />}
       />
 
       {/* Fila de distribuição por equipe */}

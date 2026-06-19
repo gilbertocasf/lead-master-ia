@@ -1,4 +1,4 @@
-import { hasSupabaseEnv } from "./supabase";
+import { isMockMode } from "./supabase";
 import { createSupabaseServer } from "./supabase-server";
 import {
   Corretor,
@@ -63,7 +63,7 @@ function comoOrigem(v: unknown): LeadSource {
 // =====================================================================
 
 export async function fetchEquipes(): Promise<Equipe[]> {
-  if (!hasSupabaseEnv) return mock.equipes;
+  if (isMockMode) return mock.equipes;
 
   const sb = createSupabaseServer();
   const { data, error } = await sb
@@ -84,7 +84,7 @@ export async function fetchEquipes(): Promise<Equipe[]> {
 }
 
 export async function fetchCorretores(): Promise<Corretor[]> {
-  if (!hasSupabaseEnv) return mock.corretores;
+  if (isMockMode) return mock.corretores;
 
   const sb = createSupabaseServer();
   const { data, error } = await sb
@@ -110,7 +110,7 @@ export async function fetchCorretores(): Promise<Corretor[]> {
 }
 
 export async function fetchPistas(): Promise<Lead[]> {
-  if (!hasSupabaseEnv) return mock.leads;
+  if (isMockMode) return mock.leads;
 
   const sb = createSupabaseServer();
   const { data, error } = await sb
@@ -145,7 +145,7 @@ export async function fetchPistas(): Promise<Lead[]> {
 }
 
 export async function fetchVendas(): Promise<Venda[]> {
-  if (!hasSupabaseEnv) return mock.vendas;
+  if (isMockMode) return mock.vendas;
 
   const sb = createSupabaseServer();
   const { data, error } = await sb

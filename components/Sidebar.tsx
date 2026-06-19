@@ -2,6 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "@/app/login/actions";
+import type { UserProfile } from "@/lib/auth";
+
+const ROLE_LABEL: Record<string, string> = {
+  admin: "Administrador",
+  gestor: "Gestor",
+  corretor: "Corretor",
+};
+
+function iniciais(nome: string): string {
+  return nome.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+}
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: GridIcon },
@@ -15,9 +27,11 @@ const NAV = [
 export function Sidebar({
   open,
   onClose,
+  profile,
 }: {
   open: boolean;
   onClose: () => void;
+  profile: UserProfile | null;
 }) {
   const pathname = usePathname();
 
@@ -77,16 +91,31 @@ export function Sidebar({
           })}
         </nav>
 
-        {/* Rodapé — perfil mock */}
+        {/* Rodapé — perfil autenticado */}
         <div className="border-t border-base-border px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/15 font-display text-xs font-semibold text-gold ring-1 ring-gold/40">
-              JC
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/15 font-display text-xs font-semibold text-gold ring-1 ring-gold/40">
+              {profile ? iniciais(profile.nome) : "—"}
             </div>
-            <div className="leading-tight">
-              <div className="text-sm font-medium text-ink">João Carvalho</div>
-              <div className="text-[11px] text-ink-faint">Administrador</div>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-sm font-medium text-ink">
+                {profile ? profile.nome : "Modo Dev"}
+              </div>
+              <div className="text-[11px] text-ink-faint">
+                {profile ? ROLE_LABEL[profile.role] ?? profile.role : "sem autenticação"}
+              </div>
             </div>
+            {profile && (
+              <form action={logout}>
+                <button
+                  type="submit"
+                  title="Sair"
+                  className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-base-raised hover:text-ink"
+                >
+                  <LogoutIcon className="h-4 w-4" />
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </aside>
@@ -139,6 +168,15 @@ function TrophyIcon({ className }: IconProps) {
       <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" />
       <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
       <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  );
+}
+function LogoutIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }

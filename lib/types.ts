@@ -1,6 +1,6 @@
 // Tipos do domínio Lead Master IA — V1 (dados mockados)
 
-export type UserRole = "admin" | "captador" | "gerente" | "corretor";
+export type UserRole = "admin" | "gestor" | "corretor";
 
 export type LeadSource = "Instagram" | "Facebook" | "Outro";
 

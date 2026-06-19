@@ -20,6 +20,7 @@ O produto resolve um problema operacional real: leads que chegam via Meta Ads, W
 
 - App publicado na Vercel e conectado ao Supabase
 - Leitura real de dados funcionando (Supabase conectado)
+- **Autenticação SSR implementada** (Fase 6.1) — login/logout, middleware de proteção de rotas, RLS ativo
 - Operações de escrita ainda não implementadas (formulário de lead, distribuição, pipeline drag-and-drop)
 - A UI reflete os dados reais do banco, mas ações de mutação são visuais
 
@@ -86,7 +87,10 @@ Crie `.env.local` na raiz com:
 ```
 NEXT_PUBLIC_SUPABASE_URL=sua_url_aqui
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_aqui
+SUPABASE_SERVICE_ROLE_KEY=sua_service_role_aqui
 ```
+
+`SUPABASE_SERVICE_ROLE_KEY` **não tem** prefixo `NEXT_PUBLIC_` — nunca expor no cliente. Obtida em Supabase Dashboard → Settings → API → Service Role Key.
 
 **Nunca versionar `.env.local`.** Está no `.gitignore`. Para produção, configure as mesmas variáveis no painel da Vercel.
 
@@ -95,15 +99,21 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_aqui
 ## Estrutura do projeto
 
 ```
+middleware.ts         proteção de rotas (redireciona para /login sem sessão)
 app/
-  layout.tsx          layout raiz (fontes + shell)
+  layout.tsx          layout raiz (fontes, sem shell)
   globals.css         base e tokens CSS
-  page.tsx            Dashboard
-  leads/              Fila de leads e tabela
-  pipeline/           Kanban por status
-  corretores/         Cards de corretores
-  equipes/            Equipes e plantão
-  ranking/            Ranking VGV
+  (app)/              route group — rotas protegidas (com AppShell)
+    layout.tsx        shell: Sidebar + Topbar
+    page.tsx          Dashboard
+    leads/            Fila de leads e tabela
+    pipeline/         Kanban por status
+    corretores/       Cards de corretores
+    equipes/          Equipes e plantão
+    ranking/          Ranking VGV
+  login/              página pública (sem shell)
+    page.tsx          formulário de login
+    actions.ts        server actions: login(), logout()
 components/
   AppShell.tsx        shell client (drawer mobile)
   Sidebar.tsx         navegação lateral
@@ -111,24 +121,32 @@ components/
   PageHeader.tsx      cabeçalho de página
   ui/                 Card, KpiCard, StatusPill, Avatar
 lib/
-  types.ts            tipos do domínio
+  types.ts            tipos do domínio (UserRole: admin | gestor | corretor)
   mock-data.ts        dados fictícios + funções derivadas
-  supabase.ts         cliente Supabase (criado uma vez)
+  supabase.ts         flag hasSupabaseEnv (sem client)
+  supabase-browser.ts createBrowserClient — Client Components
+  supabase-server.ts  createServerClient com cookies — Server Components e Actions
+  supabase-admin.ts   createClient service_role — API routes apenas (server-only)
   supabase-queries.ts camada de acesso a dados (dual-mode)
+  auth.ts             getCurrentUser, getCurrentProfile, requireAuth, requireRole
   format.ts           formatadores pt-BR
 supabase/
-  schema.sql          schema completo do banco
+  schema.sql          schema original (referência)
+  schema.v2.sql       schema alternativo com reset — NÃO aplicar sobre banco com dados
+  migrations/
+    002_security_rls_multitenancy.sql   migration aplicada no banco real
 ```
 
 ---
 
 ## Roadmap
 
-| Fase | Objetivo |
-|------|----------|
-| 4 — Planejamento técnico | Definir schema delta, contrato da API, estrutura dos componentes |
-| 5 — Schema mínimo | Aplicar alterações de banco aprovadas (histórico, campos de roteamento) |
-| 6 — Entrada de leads | Formulário manual + webhook `POST /api/leads` com deduplicação por telefone |
-| 7 — Distribuição automática | Round-robin com fairness; botão "Distribuir" com escrita real |
-| 8 — Pipeline funcional | Mover lead entre status com registro de histórico e SLA visual |
-| 9 — Validação comercial | Demo end-to-end com dados reais: lead entra, é distribuído, aparece no pipeline |
+| Fase | Objetivo | Status |
+|------|----------|--------|
+| 4 — Planejamento técnico | Definir schema delta, contrato da API, estrutura dos componentes | Concluída |
+| 5 — Schema mínimo | Migrations de banco: historico_leads, campos de roteamento, RLS | Concluída (migration 002) |
+| 6.1 — Auth SSR | Login/logout, middleware, proteção de rotas, RLS funcional | Concluída |
+| 6.2 — Entrada de leads | Formulário manual + webhook `POST /api/leads` com deduplicação | Próxima |
+| 7 — Distribuição automática | Round-robin com fairness; botão "Distribuir" com escrita real | Pendente |
+| 8 — Pipeline funcional | Mover lead entre status com registro de histórico e SLA visual | Pendente |
+| 9 — Validação comercial | Demo end-to-end: lead entra, é distribuído, aparece no pipeline | Pendente |

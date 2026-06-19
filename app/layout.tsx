@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import { AppShell } from "@/components/AppShell";
 
 const body = Inter({
   subsets: ["latin"],
@@ -29,9 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className={`${body.variable} ${display.variable}`}>
-      <body className="font-body antialiased">
-        <AppShell>{children}</AppShell>
-      </body>
+      <body className="font-body antialiased">{children}</body>
     </html>
   );
 }

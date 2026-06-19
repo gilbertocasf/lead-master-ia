@@ -42,9 +42,11 @@ Não tratar como CRM genérico. CRMs genéricos (RD Station, Pipedrive) não tê
 - App publicado na Vercel e conectado ao Supabase real
 - Leitura de dados real funcionando
 - Deploy Vercel resolvido (era problema de Root Directory — já corrigido)
-- Operações de escrita ainda não implementadas
+- **Autenticação SSR implementada** (Fase 6.1): login/logout, middleware, RLS funcional
+- **Migration 002 aplicada no banco**: RLS em 7 tabelas, multi-tenancy, `usuarios`, `imobiliarias`, `historico_leads`
+- Operações de escrita (leads, distribuição, pipeline) ainda não implementadas
 - A fase de auditorias estratégicas foi **concluída** (Fases 1 a 3.1-D)
-- A próxima fase é implementação da captura e distribuição de leads
+- A próxima fase é implementação da captura e distribuição de leads (Fase 6.2)
 
 ---
 
@@ -97,9 +99,10 @@ Implementar nesta ordem:
 
 ## Riscos conhecidos
 
-- **Tabela `pistas` vs `leads`**: o código usa `TABELA_PISTAS = "pistas"` mas o schema define `leads`. Se o banco real usa `leads`, a constante precisa ser atualizada. Verificar antes de implementar escrita.
-- **Botões visuais**: ações como "cadastrar lead", "distribuir", "mover no pipeline" existem na UI mas não têm implementação real. São o principal alvo da próxima fase.
-- **Campos ausentes no schema**: o schema atual não tem `historico_leads`, `ultimo_lead_recebido_em` em `equipes` e `corretores`, nem `em_plantao` em `corretores`. Precisam ser adicionados via migration antes da implementação.
+- **Botões visuais**: ações como "cadastrar lead", "distribuir", "mover no pipeline" existem na UI mas não têm implementação real. São o principal alvo da Fase 6.2.
+- **`valor_vgv` em `vendas`**: a coluna manteve o nome original após a migration 002 (que não renomeia colunas). `fetchVendas()` seleciona `valor_vgv` — correto. O arquivo `supabase/schema.v2.sql` planejou renomear para `valor`, mas esse arquivo nunca foi aplicado e **não deve ser aplicado** (começa com DROP TABLE).
+- **Sidebar com usuário mock**: a Sidebar exibe "João Carvalho / Administrador" fixo. Substituir pelo usuário autenticado real é trabalho da Fase 6.2 (ou antes, se necessário).
+- **`schema.v2.sql` não deve ser aplicado**: começa com `DROP TABLE ... CASCADE`. Se executado sobre o banco com dados, apaga tudo. O banco usa a migration 002, não o schema.v2.
 
 ---
 
@@ -121,12 +124,17 @@ Implementar nesta ordem:
 
 The app runs in two modes decided at boot by the presence of env vars:
 
-- **Mock mode** (default, no `.env.local`): all data comes from `lib/mock-data.ts`. No network calls.
-- **Supabase mode**: set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`. The client is created once in `lib/supabase.ts`; `hasSupabaseEnv` is the boolean flag all queries check.
+- **Mock mode** (default, no `.env.local`): all data comes from `lib/mock-data.ts`. No network calls. Auth middleware bypasses all protection.
+- **Supabase mode**: set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`. `hasSupabaseEnv` (exported from `lib/supabase.ts`) is the boolean flag all queries check.
 
-`lib/supabase-queries.ts` is the single data access layer. Each `fetch*` function gracefully falls back to mock if Supabase is unavailable. Pages call `fetchTudo()` (a `Promise.all` over all four fetch functions) and pass the result to derived functions (`getKPIs`, `getRanking`, `getFunil`, `getProximoPlantao`).
+**Supabase clients (three distinct files):**
+- `lib/supabase-browser.ts` — `createBrowserClient` for Client Components
+- `lib/supabase-server.ts` — `createServerClient` with Next.js cookies, for Server Components and Server Actions
+- `lib/supabase-admin.ts` — `createClient` with service_role key; server-only; throws if imported in browser
 
-**Important naming mismatch**: the Supabase table for leads is called `pistas` in the code (`TABELA_PISTAS = "pistas"`) but the schema defines a `leads` table. Verify the actual table name in the real DB before implementing write operations.
+`lib/supabase-queries.ts` is the single data access layer. Each `fetch*` function uses `createSupabaseServer()` internally. In Supabase mode, errors throw clearly instead of falling back to mock — the silent fallback was removed. Pages call `fetchTudo()` (a `Promise.all` over all four fetch functions) and pass the result to derived functions (`getKPIs`, `getRanking`, `getFunil`, `getProximoPlantao`).
+
+**Table name**: `TABELA_PISTAS = "leads"` — the constant was already corrected to match the real table name in the database.
 
 ### Domain model (`lib/types.ts`)
 
@@ -136,18 +144,23 @@ Key types: `Lead`, `Corretor`, `Equipe`, `Venda`, `RankingItem`. The pipeline ha
 
 Each page is an async Server Component that calls `fetchTudo()` and renders inline. No client-side data fetching. The only Client Component is `AppShell` (manages the mobile drawer state).
 
+Protected pages live under the `app/(app)/` route group and are wrapped by `app/(app)/layout.tsx` (AppShell). The login page lives at `app/login/` with no shell.
+
 | Route | File |
 |-------|------|
-| `/` | `app/page.tsx` |
-| `/leads` | `app/leads/page.tsx` |
-| `/pipeline` | `app/pipeline/page.tsx` |
-| `/corretores` | `app/corretores/page.tsx` |
-| `/equipes` | `app/equipes/page.tsx` |
-| `/ranking` | `app/ranking/page.tsx` |
+| `/` | `app/(app)/page.tsx` |
+| `/leads` | `app/(app)/leads/page.tsx` |
+| `/pipeline` | `app/(app)/pipeline/page.tsx` |
+| `/corretores` | `app/(app)/corretores/page.tsx` |
+| `/equipes` | `app/(app)/equipes/page.tsx` |
+| `/ranking` | `app/(app)/ranking/page.tsx` |
+| `/login` | `app/login/page.tsx` |
 
 ### Layout
 
-`app/layout.tsx` → `AppShell` → `Sidebar` + `Topbar` + `<main>`. The sidebar is a fixed 64-unit column on desktop; on mobile it becomes a drawer controlled by `AppShell`'s `menuOpen` state.
+`app/layout.tsx` — root layout, fonts only (no shell).  
+`app/(app)/layout.tsx` — protected group layout: `AppShell` → `Sidebar` + `Topbar` + `<main>`. The sidebar is a fixed 64-unit column on desktop; on mobile it becomes a drawer controlled by `AppShell`'s `menuOpen` state.  
+`middleware.ts` — intercepts every request; in Supabase mode redirects unauthenticated users to `/login` and authenticated users away from `/login`.
 
 ### Design tokens (Tailwind)
 

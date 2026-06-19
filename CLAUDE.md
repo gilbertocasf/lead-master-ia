@@ -15,6 +15,18 @@ There is no test suite in this project.
 
 ---
 
+## Skill operacional
+
+Antes de iniciar qualquer tarefa de implementação ou planejamento, invocar:
+
+```
+/lead-master-product-architect
+```
+
+Essa skill contém: identidade do produto, decisões aprovadas, ordem de prioridade, regras de execução e checklist de início de tarefa. Está em `.claude/commands/lead-master-product-architect.md`.
+
+---
+
 ## Definição do produto
 
 **Lead Master IA é um distribuidor inteligente de leads para imobiliárias** — não um CRM genérico.

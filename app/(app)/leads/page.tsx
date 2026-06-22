@@ -3,6 +3,7 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Avatar } from "@/components/ui/Avatar";
 import { NovoLeadModal } from "@/components/NovoLeadModal";
+import { ComingSoonButton } from "@/components/ui/ComingSoonButton";
 import {
   fetchTudo,
   getProximoPlantao,
@@ -71,9 +72,9 @@ export default async function LeadsPage() {
                       <div className="truncate text-xs text-ink-muted">{lead.interesse} • {lead.origem}</div>
                     </div>
                     <div className="hidden text-right text-xs text-ink-faint sm:block">{timeAgo(lead.criadoEm)}</div>
-                    <button className="rounded-lg bg-action px-3 py-1.5 text-xs font-medium text-white hover:bg-action/90">
+                    <ComingSoonButton className="rounded-lg bg-action px-3 py-1.5 text-xs font-medium text-white hover:bg-action/90">
                       Distribuir
-                    </button>
+                    </ComingSoonButton>
                   </div>
                 ))}
               </div>

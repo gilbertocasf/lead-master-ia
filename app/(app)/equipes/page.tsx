@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
+import { ComingSoonButton } from "@/components/ui/ComingSoonButton";
 import { fetchTudo, getRanking } from "@/lib/supabase-queries";
 import { formatBRLCompact } from "@/lib/format";
 
@@ -25,10 +26,10 @@ export default async function EquipesPage() {
         title="Equipes"
         description="A imobiliária opera com duas equipes. Cada gerente distribui os leads da sua fila seguindo a ordem de plantão."
         action={
-          <button className="flex items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action/90">
+          <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action/90">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
             Nova equipe
-          </button>
+          </ComingSoonButton>
         }
       />
 

@@ -5,9 +5,14 @@ import { fetchTudo, getRanking } from "@/lib/supabase-queries";
 import { formatBRL, formatBRLCompact } from "@/lib/format";
 import { RankingItem } from "@/lib/types";
 
-export default async function RankingPage() {
+export default async function RankingPage({
+  searchParams,
+}: {
+  searchParams: { equipe?: string };
+}) {
   const dados = await fetchTudo();
-  const ranking = getRanking(dados);
+  const equipeAtiva = dados.equipes.find((e) => e.id === searchParams.equipe) ?? null;
+  const ranking = getRanking(dados, equipeAtiva?.id);
   const [primeiro, segundo, terceiro] = ranking;
 
   return (
@@ -18,9 +23,21 @@ export default async function RankingPage() {
         description="Classificação por valor de vendas fechadas no período. Considera apenas vendas — locações não entram no ranking."
         action={
           <div className="flex gap-1 rounded-xl border border-base-border bg-base-surface p-1 text-sm">
-            <button className="rounded-lg bg-action px-3 py-1.5 font-medium text-white">Geral</button>
-            <button className="rounded-lg px-3 py-1.5 text-ink-muted hover:text-ink">Atlântico</button>
-            <button className="rounded-lg px-3 py-1.5 text-ink-muted hover:text-ink">Horizonte</button>
+            <a
+              href="/ranking"
+              className={`rounded-lg px-3 py-1.5 font-medium ${!equipeAtiva ? "bg-action text-white" : "text-ink-muted hover:text-ink"}`}
+            >
+              Geral
+            </a>
+            {dados.equipes.map((eq) => (
+              <a
+                key={eq.id}
+                href={`/ranking?equipe=${eq.id}`}
+                className={`rounded-lg px-3 py-1.5 font-medium ${equipeAtiva?.id === eq.id ? "bg-action text-white" : "text-ink-muted hover:text-ink"}`}
+              >
+                {eq.nome}
+              </a>
+            ))}
           </div>
         }
       />

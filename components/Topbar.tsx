@@ -24,13 +24,6 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
         Junho 2026
       </div>
 
-      {/* Ação primária */}
-      <button className="hidden items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-action/90 sm:flex">
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        Novo lead
-      </button>
     </header>
   );
 }

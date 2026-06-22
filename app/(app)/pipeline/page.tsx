@@ -1,8 +1,8 @@
 import { PageHeader } from "@/components/PageHeader";
-import { StatusPill } from "@/components/ui/StatusPill";
 import { Avatar } from "@/components/ui/Avatar";
 import { fetchTudo } from "@/lib/supabase-queries";
 import { PIPELINE_ORDER, STATUS_LABEL, LeadStatus } from "@/lib/types";
+import { StatusDropdown } from "@/components/pipeline/StatusDropdown";
 
 const COLUMN_ACCENT: Record<LeadStatus, string> = {
   novo: "#3B82F6",
@@ -74,9 +74,9 @@ export default async function PipelinePage() {
                         ) : (
                           <span className="text-xs text-warn">Aguardando distribuição</span>
                         )}
-                        {lead.status === "perdido" && lead.motivoPerda && (
-                          <span className="text-[10px] text-loss">{lead.motivoPerda}</span>
-                        )}
+                      </div>
+                      <div className="mt-2.5">
+                        <StatusDropdown leadId={lead.id} statusAtual={lead.status} />
                       </div>
                     </div>
                   );
@@ -87,9 +87,6 @@ export default async function PipelinePage() {
         })}
       </div>
 
-      <p className="mt-2 text-xs text-ink-faint">
-        Dica: na versão final, os cards serão arrastáveis entre colunas. Aqui é uma demonstração visual com dados fictícios.
-      </p>
     </>
   );
 }

@@ -1,5 +1,11 @@
 # Próximas Fases — Lead Master IA
-**Atualizado:** 2026-06-19
+**Atualizado:** 2026-06-22
+
+Status de fases:
+- Fase 6.2 — concluída
+- Fase 7 — concluída
+- Fase 8 — concluída
+- Fase 9 — próxima fase
 
 As Fases 1 a 3.1-D concluíram a auditoria estratégica e definiram a arquitetura. As próximas fases são de implementação.
 

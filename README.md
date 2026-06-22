@@ -21,6 +21,8 @@ O produto resolve um problema operacional real: leads que chegam via Meta Ads, W
 - App publicado na Vercel e conectado ao Supabase
 - Leitura real de dados funcionando (Supabase conectado)
 - **Autenticação SSR implementada** (Fase 6.1) — login/logout, middleware de proteção de rotas, RLS ativo
+- Fase 8 concluída com SLA visual no pipeline validado
+- Fase 9 está configurada como a próxima etapa do roadmap
 - Operações de escrita ainda não implementadas (formulário de lead, distribuição, pipeline drag-and-drop)
 - A UI reflete os dados reais do banco, mas ações de mutação são visuais
 
@@ -148,5 +150,5 @@ supabase/
 | 6.1 — Auth SSR | Login/logout, middleware, proteção de rotas, RLS funcional | Concluída |
 | 6.2 — Entrada de leads | Formulário manual + webhook `POST /api/leads` com deduplicação | Concluída |
 | 7 — Distribuição automática | Round-robin com fairness; botão "Distribuir" com escrita real | Concluída |
-| 8 — Pipeline funcional | Mover lead entre status com registro de histórico e SLA visual | Próxima |
-| 9 — Validação comercial | Demo end-to-end: lead entra, é distribuído, aparece no pipeline | Pendente |
+| 8 — Pipeline funcional | Mover lead entre status com registro de histórico e SLA visual | Concluída |
+| 9 — Validação comercial | Demo end-to-end: lead entra, é distribuído, aparece no pipeline | Próxima |

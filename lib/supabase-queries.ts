@@ -116,7 +116,7 @@ export async function fetchPistas(): Promise<Lead[]> {
   const { data, error } = await sb
     .from(TABELA_PISTAS)
     .select(
-      "id, nome, telefone, origem, interesse, faixa_valor, equipe_id, corretor_id, status, observacoes, created_at"
+      "id, nome, telefone, origem, interesse, faixa_valor, equipe_id, corretor_id, status, observacoes, created_at, distribuido_em"
     )
     .order("created_at", { ascending: false });
 
@@ -137,6 +137,7 @@ export async function fetchPistas(): Promise<Lead[]> {
     corretorId: row.corretor_id ? String(row.corretor_id) : null,
     captadorNome: "",
     criadoEm: row.created_at ?? new Date().toISOString(),
+    distribuidoEm: row.distribuido_em ?? null,
     motivoPerda:
       comoStatus(row.status) === "perdido"
         ? row.observacoes ?? undefined

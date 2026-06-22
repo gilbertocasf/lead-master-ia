@@ -43,6 +43,7 @@ export interface Lead {
   corretorId: string | null; // null = ainda na fila de distribuição
   captadorNome: string;
   criadoEm: string; // ISO
+  distribuidoEm?: string | null; // timestamp do início do SLA
   motivoPerda?: string;
 }
 

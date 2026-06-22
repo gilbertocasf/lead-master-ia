@@ -3,6 +3,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { fetchTudo } from "@/lib/supabase-queries";
 import { PIPELINE_ORDER, STATUS_LABEL, LeadStatus } from "@/lib/types";
 import { StatusDropdown } from "@/components/pipeline/StatusDropdown";
+import { PipelineSlaBadge } from "@/components/pipeline/PipelineSlaBadge";
 
 const COLUMN_ACCENT: Record<LeadStatus, string> = {
   novo: "#3B82F6",
@@ -75,8 +76,11 @@ export default async function PipelinePage() {
                           <span className="text-xs text-warn">Aguardando distribuição</span>
                         )}
                       </div>
-                      <div className="mt-2.5">
+                      <div className="mt-2.5 flex items-center justify-between gap-3">
                         <StatusDropdown leadId={lead.id} statusAtual={lead.status} />
+                        <div className="flex-shrink-0">
+                          <PipelineSlaBadge lead={lead} />
+                        </div>
                       </div>
                     </div>
                   );

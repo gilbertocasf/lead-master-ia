@@ -146,7 +146,7 @@ supabase/
 | 4 — Planejamento técnico | Definir schema delta, contrato da API, estrutura dos componentes | Concluída |
 | 5 — Schema mínimo | Migrations de banco: historico_leads, campos de roteamento, RLS | Concluída (migration 002) |
 | 6.1 — Auth SSR | Login/logout, middleware, proteção de rotas, RLS funcional | Concluída |
-| 6.2 — Entrada de leads | Formulário manual + webhook `POST /api/leads` com deduplicação | Próxima |
-| 7 — Distribuição automática | Round-robin com fairness; botão "Distribuir" com escrita real | Pendente |
-| 8 — Pipeline funcional | Mover lead entre status com registro de histórico e SLA visual | Pendente |
+| 6.2 — Entrada de leads | Formulário manual + webhook `POST /api/leads` com deduplicação | Concluída |
+| 7 — Distribuição automática | Round-robin com fairness; botão "Distribuir" com escrita real | Concluída |
+| 8 — Pipeline funcional | Mover lead entre status com registro de histórico e SLA visual | Próxima |
 | 9 — Validação comercial | Demo end-to-end: lead entra, é distribuído, aparece no pipeline | Pendente |

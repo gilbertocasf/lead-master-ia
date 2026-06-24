@@ -1,170 +1,102 @@
 # Próximas Fases — Lead Master IA
-**Atualizado:** 2026-06-22
+**Atualizado:** 2026-06-24
 
-Status de fases:
-- Fase 6.2 — concluída
-- Fase 7 — concluída
-- Fase 8 — concluída
-- Fase 9 — próxima fase
+## Status das fases
 
-As Fases 1 a 3.1-D concluíram a auditoria estratégica e definiram a arquitetura. As próximas fases são de implementação.
-
----
-
-## Fase 4 — Planejamento técnico da captura e distribuição
-
-**Objetivo:** definir o contrato técnico completo antes de escrever código.
-
-**Entregáveis:**
-
-- Lista exata das migrations necessárias (campos a adicionar, tabelas a criar)
-- Contrato da API `POST /api/leads` (campos obrigatórios, validações, respostas)
-- Estrutura dos componentes React para o formulário de cadastro
-- Diagrama do fluxo de dados: formulário/webhook → API route → banco → UI
-- Critério de aceite para cada item antes de ir para Fase 5
-
-**Dependências:** Fases 1–3.1-D concluídas (✓)
+| Fase | Descrição | Status |
+|------|-----------|--------|
+| 1–3.1-D | Auditorias estratégicas e arquitetura | ✓ Concluída |
+| 4 | Planejamento técnico da captura e distribuição | ✓ Concluída |
+| 5 | Schema mínimo (migrations 001–002) | ✓ Concluída |
+| 6.1 | Autenticação SSR | ✓ Concluída |
+| 6.2 | Entrada de leads via formulário e webhook | ✓ Concluída |
+| 7 | Distribuição automática (RPC 003) | ✓ Concluída |
+| 8 | Pipeline funcional + SLA visual (RPC 004) | ✓ Concluída |
+| **9** | **Validação end-to-end em produção** | **✓ Concluída — 2026-06-24** |
+| 10 | Preparação comercial da demo real | → Próxima fase |
 
 ---
 
-## Fase 5 — Schema mínimo
+## Marco: v1-demo-operacional — VALIDADO
 
-**Objetivo:** aplicar as alterações de banco necessárias para suportar captura e distribuição.
+Tag `v1-demo-operacional` criada e enviada ao GitHub em 2026-06-24.
 
-**Migrations a aplicar:**
+O fluxo principal do produto está operacional em produção (Vercel + Supabase real) com dados reais da BASILIO IMOVEIS:
 
-```sql
--- 1. Campo de disponibilidade de plantão (separado de ativo)
-ALTER TABLE corretores ADD COLUMN em_plantao BOOLEAN NOT NULL DEFAULT false;
-
--- 2. Timestamp para fairness no round-robin de corretores
-ALTER TABLE corretores ADD COLUMN ultimo_lead_recebido_em TIMESTAMPTZ;
-
--- 3. Timestamp para fairness no rodízio de equipes (fallback de roteamento)
-ALTER TABLE equipes ADD COLUMN ultimo_lead_recebido_em TIMESTAMPTZ;
-
--- 4. Campos de rastreamento de entrada do lead
-ALTER TABLE leads ADD COLUMN campanha_nome TEXT;
-ALTER TABLE leads ADD COLUMN distribuido_em TIMESTAMPTZ;
-
--- 5. Histórico de eventos do lead
-CREATE TABLE historico_leads (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id     UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-  tipo        TEXT NOT NULL,
-  descricao   TEXT,
-  dados       JSONB,
-  criado_por  TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE INDEX idx_historico_leads_lead_id ON historico_leads (lead_id);
-CREATE INDEX idx_historico_leads_created_at ON historico_leads (created_at);
+```
+Lead entra via formulário
+  → Sistema distribui automaticamente para o corretor de plantão
+  → Lead aparece no pipeline com badge SLA
+  → Corretor move o status
+  → Evento registrado em historico_leads
+  → Sem intervenção manual do gestor
 ```
 
-**Critério de conclusão:** migrations aplicadas no Supabase real; schema.sql atualizado.
-
-**Dependências:** Fase 4 concluída
+Esse é o diferencial do produto. Nenhum CRM genérico faz isso.
 
 ---
 
-## Fase 6 — Implementação da entrada de leads
+## Pendências conhecidas (dívida pós-MVP)
 
-**Objetivo:** lead pode entrar no sistema via formulário manual ou webhook.
+Funcionalidades previstas mas não implementadas no MVP:
 
-**Escopo:**
-
-- Modal "Cadastrar lead" com campos: nome, telefone (obrigatório), origem (obrigatório), interesse, faixa de valor, equipe (obrigatório), campanha_nome (opcional)
-- Validação no frontend: campos obrigatórios, formato de telefone
-- API route `POST /api/leads` com:
-  - Validação de entrada
-  - Deduplicação por telefone (janela 24h → HTTP 409 se duplicata)
-  - Lógica de roteamento: `equipe_id` no payload → direto; sem `equipe_id` → rodízio
-  - INSERT em `leads` com `status = 'novo'`, `corretor_id = NULL`
-  - INSERT em `historico_leads` com `tipo = 'lead_criado'`
-  - UPDATE em `equipes.ultimo_lead_recebido_em` (para fairness do rodízio)
-- Retorno de sucesso com o lead criado
-
-**Critério de conclusão:** lead criado via formulário aparece na fila de `/leads` em tempo real.
-
-**Dependências:** Fase 5 concluída
+| # | Item | Observação |
+|---|------|-----------|
+| P1 | Botão "Distribuir" sem ação real | Distribuição ocorre automaticamente no cadastro; o botão cobre o fallback (lead órfão) — não é o fluxo principal |
+| P2 | Motivo de perda não implementado | Mover lead para `perdido` não exige justificativa ainda |
+| P3 | Status de plantão não editável na UI | `em_plantao` só muda via SQL direto no banco |
+| P4 | Registro de venda não implementado | Não existe formulário de fechamento no app |
+| P5 | SLA badge não atualiza em tempo real | Estático; requer reload para ver evolução |
 
 ---
 
-## Fase 7 — Distribuição automática
+## Fase 10 — Preparação comercial da demo real
 
-**Objetivo:** botão "Distribuir" atribui o lead ao corretor de plantão e registra o evento.
+**Objetivo:** refinar a experiência da demo para uso com prospects reais, sem grandes features novas.
 
-**Escopo:**
+**Escopo — apenas ajustes comerciais e de apresentação:**
 
-- Botão "Distribuir" no card da fila chama `POST /api/leads/:id/distribuir`
-- API route executa o algoritmo round-robin:
-  - Busca corretor `em_plantao = true`, `ativo = true`, com menor `ultimo_lead_recebido_em`
-  - UPDATE `leads.corretor_id` e `leads.distribuido_em`
-  - UPDATE `corretores.ultimo_lead_recebido_em`
-  - INSERT em `historico_leads` com `tipo = 'lead_distribuido'`
-- Lead sai da fila e aparece no pipeline do corretor
-- SLA visual começa a contar a partir de `distribuido_em`
+### 10.1 — Dados e apresentação
+- Confirmar que os dados da Basílio Imóveis estão consistentes no banco (nomes, equipes, corretores em plantão)
+- Verificar que o ranking VGV está populado com vendas de demo coerentes
+- Garantir que a fila de `/leads` está limpa antes de cada demo
 
-**Critério de conclusão:** lead distribuído aparece no `/pipeline` com o corretor atribuído; fila de `/leads` atualizada.
+### 10.2 — Acabamentos visuais críticos
+- Remover ou corrigir o label de região vazio nos cards do pipeline (renderiza " • R$ valor" com espaço extra)
 
-**Dependências:** Fase 6 concluída
+### 10.3 — Roteiro de demo documentado
+- Criar `docs/roteiro-demo.md` com script pronto para o apresentador
+- Incluir: ordem dos passos, o que dizer em cada tela, como reagir a perguntas do prospect
 
----
+### 10.4 — Estabilidade operacional
+- Validar que a sessão Supabase não expira durante uma demo de 30 minutos
+- Confirmar que o deploy da Vercel está sempre na `main` antes de uma reunião
 
-## Fase 8 — Pipeline funcional
+**Critério de conclusão:** gestor consegue apresentar o produto para um prospect novo em 10 minutos sem precisar de suporte técnico.
 
-**Objetivo:** corretor pode mover lead entre status; histórico é registrado; SLA é visível.
-
-**Escopo:**
-
-- Seletor de status no card do kanban (dropdown com os 6 status)
-- API route `PATCH /api/leads/:id/status`
-- INSERT em `historico_leads` com `tipo = 'status_alterado'`, timestamp
-- Indicador de SLA visual:
-  - Verde: menos de 30 minutos sem contato após distribuição
-  - Amarelo: 30 min–2h
-  - Vermelho: mais de 2h
-- Motivo de perda obrigatório ao mover para `perdido`
-- Filtros de ranking por equipe funcionando
-
-**Critério de conclusão:** gestor consegue acompanhar o pipeline em tempo real com SLA visível; leads movidos atualizam o funil e o ranking corretamente.
-
-**Dependências:** Fase 7 concluída
-
----
-
-## Fase 9 — Validação de demo comercial
-
-**Objetivo:** demonstrar o loop completo para um prospect real.
-
-**Roteiro de demo:**
-
-1. Abrir `/leads` — mostrar fila vazia
-2. Cadastrar lead via formulário — lead aparece na fila em segundos
-3. Clicar "Distribuir" — lead vai para corretor de plantão
-4. Abrir `/pipeline` — lead aparece na coluna "Novo" do corretor
-5. Mover lead para "Em contato" — relógio de SLA para
-6. Abrir `/ranking` — corretor aparece com lead ativo
-
-**Critério de conclusão:** demo executada sem erros em produção (Vercel + Supabase real) com dados reais.
-
-**Dependências:** Fases 4–8 concluídas
+**O que NÃO entra na Fase 10:**
+- WhatsApp, Meta Ads nativo, multi-tenant
+- Novas rotas ou páginas
+- Alterações de schema ou migrations
+- Autenticação por papel para corretores
 
 ---
 
 ## Versão 1 — CRM operacional (pós-MVP)
 
-Após o MVP validado comercialmente:
+Após a Fase 10 validar a demo com prospects reais:
 
 | # | Funcionalidade |
 |---|---------------|
-| 1 | Pipeline drag-and-drop |
-| 2 | Registro de venda (imóvel, VGV, data) |
-| 3 | Status de plantão editável pelo gerente na UI |
-| 4 | Alertas de inatividade (lead parado > 48h) |
-| 5 | Autenticação por papel (admin / gerente / corretor) |
-| 6 | Lead score básico (regras configuráveis) |
-| 7 | Webhook com autenticação (secret no header) |
+| 1 | Botão "Distribuir" com endpoint real (`POST /api/leads/[id]/distribuir`) |
+| 2 | Motivo de perda obrigatório ao mover para `perdido` |
+| 3 | Registro de venda (imóvel, VGV, data) |
+| 4 | Status de plantão editável pelo gerente na UI |
+| 5 | Login individual para corretores (vínculo `usuarios` ↔ `corretores`) |
+| 6 | Alertas de inatividade (lead parado > 48h) |
+| 7 | SLA badge atualizando em tempo real (Client Component) |
+| 8 | Filtros de ranking por equipe funcionais |
+| 9 | Webhook com autenticação (secret no header) |
 
 ---
 
@@ -175,8 +107,8 @@ Após o MVP validado comercialmente:
 | 1 | Roteamento automático por campanha (tabela `config_campanhas`) |
 | 2 | Roteamento por empreendimento (tabela `empreendimentos`) |
 | 3 | Lead scoring com histórico de conversão |
-| 4 | Notificações via WhatsApp (Twilio ou API não-oficial) |
-| 5 | Dashboard de conversão por canal de origem |
-| 6 | Integração nativa com Meta Lead Ads |
-| 7 | Relatório de SLA por equipe |
+| 4 | Dashboard de conversão por canal de origem |
+| 5 | Relatório de SLA por equipe |
+| 6 | Notificações via WhatsApp |
+| 7 | Integração nativa com Meta Lead Ads |
 | 8 | Multi-tenant (múltiplas imobiliárias) |

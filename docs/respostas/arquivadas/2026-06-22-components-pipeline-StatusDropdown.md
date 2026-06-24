@@ -58,4 +58,5 @@ export function StatusDropdown({ leadId, statusAtual }: Props) {
     </div>
   );
 }
+
 ```

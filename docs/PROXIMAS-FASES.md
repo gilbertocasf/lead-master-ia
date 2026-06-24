@@ -82,6 +82,18 @@ Funcionalidades previstas mas não implementadas no MVP:
 
 ---
 
+## Oportunidades identificadas — aguardando avaliação
+
+Oportunidades levantadas durante a Fase 10 mas ainda não aprovadas para implementação. Critério de desbloqueio: prospect real levantar como objeção ou requisito de adoção.
+
+| # | Oportunidade | Impacto comercial | Complexidade | Status |
+|---|-------------|------------------|--------------|--------|
+| O1 | **Notificação por e-mail ao corretor ao receber lead** | Alto — demonstra que o produto é ativo, não passivo | Baixa (Supabase + serviço SMTP transacional) | Não aprovado — aguardando validação comercial |
+
+> **O1 — Detalhe:** Lead criado → distribuição automática → e-mail enviado ao corretor → corretor acessa o sistema. E-mail foi priorizado em relação a WhatsApp por menor complexidade. Implementação seria via API route pós-distribuição ou Supabase Edge Function.
+
+---
+
 ## Versão 1 — CRM operacional (pós-MVP)
 
 Após a Fase 10 validar a demo com prospects reais:
@@ -97,6 +109,7 @@ Após a Fase 10 validar a demo com prospects reais:
 | 7 | SLA badge atualizando em tempo real (Client Component) |
 | 8 | Filtros de ranking por equipe funcionais |
 | 9 | Webhook com autenticação (secret no header) |
+| 10 | Notificação por e-mail ao corretor ao receber lead (ver O1) |
 
 ---
 

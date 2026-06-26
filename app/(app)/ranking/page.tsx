@@ -21,9 +21,9 @@ export default async function RankingPage({
           description="Classificação por valor de vendas fechadas."
         />
         <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
-          <p className="text-sm font-semibold text-ink-muted">Área restrita</p>
+          <p className="text-sm font-semibold text-ink-muted">Área administrativa</p>
           <p className="mt-1 text-xs text-ink-muted">
-            O ranking está disponível para gestores e administradores.
+            Ranking disponível para administradores e gestores.
           </p>
         </div>
       </>
@@ -62,8 +62,6 @@ export default async function RankingPage({
     );
   }
 
-  // Gestor: dados.equipes já tem só a própria equipe → aba sempre ativa, sem "Geral"
-  // Admin/mock: dados.equipes tem todas → usa searchParams.equipe normalmente
   const isGestorEscopado = usuario?.role === "gestor" && dados.equipes.length === 1;
 
   const equipeAtiva = isGestorEscopado

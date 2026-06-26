@@ -1,8 +1,13 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
-import { ComingSoonButton } from "@/components/ui/ComingSoonButton";
-import { fetchTudoEscopado, getRanking } from "@/lib/supabase-queries";
+import {
+  fetchTudoEscopado,
+  fetchUsuariosCorretores,
+  getRanking,
+} from "@/lib/supabase-queries";
+import { EditarVinculoCorretorModal } from "@/components/EditarVinculoCorretorModal";
+import { NovoCorretorModal } from "@/components/NovoCorretorModal";
 import { formatBRLCompact } from "@/lib/format";
 
 export default async function CorretoresPage() {
@@ -17,9 +22,9 @@ export default async function CorretoresPage() {
           description="Quadro de corretores por equipe."
         />
         <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
-          <p className="text-sm font-semibold text-ink-muted">Área restrita</p>
+          <p className="text-sm font-semibold text-ink-muted">Área administrativa</p>
           <p className="mt-1 text-xs text-ink-muted">
-            Esta seção está disponível para gestores e administradores.
+            Disponível apenas para administradores e gestores.
           </p>
         </div>
       </>
@@ -66,7 +71,10 @@ export default async function CorretoresPage() {
   const dadosPorCorretor = (id: string) => {
     const r = ranking.find((x) => x.corretorId === id);
     const leadsAtivos = leads.filter(
-      (l) => l.corretorId === id && l.status !== "fechado" && l.status !== "perdido"
+      (l) =>
+        l.corretorId === id &&
+        l.status !== "fechado" &&
+        l.status !== "perdido"
     ).length;
     return {
       vgv: r?.vgvTotal ?? 0,
@@ -75,8 +83,10 @@ export default async function CorretoresPage() {
     };
   };
 
-  // Botão "Adicionar corretor" apenas para admin
   const isAdmin = usuario?.role === "admin";
+
+  // Para admin: carregar lista de usuários corretores para o modal de vínculo
+  const usuariosCorretores = isAdmin ? await fetchUsuariosCorretores() : [];
 
   return (
     <>
@@ -85,12 +95,7 @@ export default async function CorretoresPage() {
         title="Corretores"
         description="Quadro de corretores por equipe, com status de plantão e desempenho de vendas."
         action={
-          isAdmin ? (
-            <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action/90">
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-              Adicionar corretor
-            </ComingSoonButton>
-          ) : null
+          isAdmin ? <NovoCorretorModal equipes={dados.equipes} /> : null
         }
       />
 
@@ -136,6 +141,15 @@ export default async function CorretoresPage() {
               <div className="mt-3 text-[11px] text-ink-faint">
                 Ordem de plantão: <span className="text-ink-muted">{c.ordemPlantao}º</span>
               </div>
+
+              {/* Botão de edição de vínculo — apenas para admin */}
+              {isAdmin && (
+                <EditarVinculoCorretorModal
+                  corretor={c}
+                  equipes={dados.equipes}
+                  usuariosCorretores={usuariosCorretores}
+                />
+              )}
             </Card>
           );
         })}

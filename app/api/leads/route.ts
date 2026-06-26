@@ -120,7 +120,16 @@ export async function POST(req: NextRequest) {
   // 4. Enforcement de escopo por role
   //    Gestor: equipe_id sempre vem de usuarios.equipe_id (não do payload)
   //    Admin:  equipe_id vem do payload normalmente
-  const admin = createSupabaseAdmin();
+  let admin: ReturnType<typeof createSupabaseAdmin>;
+  try {
+    admin = createSupabaseAdmin();
+  } catch (err) {
+    console.error("[POST /api/leads] createSupabaseAdmin:", err);
+    return NextResponse.json(
+      { erro: "servico_indisponivel", detalhe: "SUPABASE_SERVICE_ROLE_KEY não configurada no servidor." },
+      { status: 503 }
+    );
+  }
   let equipe_id: string | null = equipe_id_payload;
 
   if (usuario.role === "gestor") {
@@ -186,8 +195,11 @@ export async function POST(req: NextRequest) {
     if (rpcError.message.includes("corretor_invalido_ou_fora_da_equipe")) {
       return NextResponse.json({ erro: "corretor_invalido" }, { status: 400 });
     }
-    console.error("[POST /api/leads] RPC error:", rpcError.message);
-    return NextResponse.json({ erro: "erro_interno" }, { status: 500 });
+    console.error("[POST /api/leads] RPC error:", rpcError);
+    return NextResponse.json(
+      { erro: "erro_interno", detalhe: rpcError.message, codigo: rpcError.code },
+      { status: 500 }
+    );
   }
 
   const result = data as RpcResult;

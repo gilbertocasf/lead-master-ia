@@ -11,6 +11,7 @@ interface NovoLeadModalProps {
 
 interface ErroState {
   tipo: string;
+  detalhe?: string;
   lead_existente?: { id: string; nome: string; created_at: string };
 }
 
@@ -93,7 +94,13 @@ export function NovoLeadModal({ equipes, corretores }: NovoLeadModalProps) {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      let data: { erro?: string; detalhe?: string; lead_existente?: { id: string; nome: string; created_at: string } } = {};
+      try {
+        data = await res.json();
+      } catch {
+        setErro({ tipo: "erro_interno" });
+        return;
+      }
 
       if (res.status === 409) {
         setErro({ tipo: "duplicata", lead_existente: data.lead_existente });
@@ -101,7 +108,7 @@ export function NovoLeadModal({ equipes, corretores }: NovoLeadModalProps) {
       }
 
       if (!res.ok) {
-        setErro({ tipo: data.erro ?? "erro_interno" });
+        setErro({ tipo: data.erro ?? "erro_interno", detalhe: data.detalhe });
         return;
       }
 
@@ -117,18 +124,20 @@ export function NovoLeadModal({ equipes, corretores }: NovoLeadModalProps) {
   const inputCls =
     "w-full rounded-xl border border-base-border bg-base-raised px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-action focus:outline-none";
 
-  function mensagemErro(tipo: string): string {
-    switch (tipo) {
+  function mensagemErro(e: ErroState): string {
+    switch (e.tipo) {
       case "corretor_obrigatorio":
         return "Selecione o corretor que captou o lead.";
       case "corretor_invalido":
         return "Corretor inválido ou não pertence à equipe selecionada.";
       case "sem_equipe_disponivel":
         return "Nenhuma equipe ativa disponível.";
+      case "servico_indisponivel":
+        return "Serviço indisponível. Chave de serviço não configurada no servidor.";
       case "erro_rede":
         return "Erro de conexão. Verifique a rede e tente novamente.";
       default:
-        return "Erro ao cadastrar lead. Tente novamente.";
+        return e.detalhe ? `Erro interno: ${e.detalhe}` : "Erro ao cadastrar lead. Tente novamente.";
     }
   }
 
@@ -210,7 +219,7 @@ export function NovoLeadModal({ equipes, corretores }: NovoLeadModalProps) {
               {/* Erro genérico */}
               {erro && erro.tipo !== "duplicata" && (
                 <div className="rounded-xl border border-loss/30 bg-loss/10 px-4 py-3 text-sm text-loss">
-                  {mensagemErro(erro.tipo)}
+                  {mensagemErro(erro)}
                 </div>
               )}
 

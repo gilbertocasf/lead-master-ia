@@ -15,9 +15,11 @@ const COLUMN_ACCENT: Record<LeadStatus, string> = {
 };
 
 export default async function PipelinePage() {
-  const { dados, usuario, semEquipe } = await fetchTudoEscopado();
+  const { dados, usuario, semEquipe, semCorretorVinculado } =
+    await fetchTudoEscopado();
 
-  if (usuario?.role === "corretor") {
+  // Corretor sem vínculo
+  if (semCorretorVinculado) {
     return (
       <>
         <PageHeader
@@ -25,10 +27,24 @@ export default async function PipelinePage() {
           title="Pipeline"
           description="Acompanhamento por etapas do funil."
         />
-        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
-          <p className="text-sm font-semibold text-ink-muted">Área restrita</p>
+        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+          <svg
+            viewBox="0 0 24 24"
+            className="mx-auto mb-3 h-8 w-8 text-warn"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
           <p className="mt-1 text-xs text-ink-muted">
-            O pipeline está disponível para gestores e administradores.
+            Seu usuário ainda não está vinculado a um cadastro de corretor.
+            Solicite ao administrador que preencha o campo{" "}
+            <span className="font-medium text-ink">usuario_id</span> na tabela{" "}
+            <span className="font-medium text-ink">corretores</span>.
           </p>
         </div>
       </>
@@ -67,18 +83,20 @@ export default async function PipelinePage() {
     );
   }
 
+  const isCorretor = usuario?.role === "corretor";
   const leads = dados.pistas;
   const getCorretor = (id: string | null) =>
     id ? dados.corretores.find((c) => c.id === id) ?? null : null;
   const getEquipe = (id: string) => dados.equipes.find((e) => e.id === id);
 
+  const eyebrow = isCorretor ? "Meu pipeline" : "Acompanhamento";
+  const descricao = isCorretor
+    ? "Acompanhe o andamento das suas oportunidades e mova cada lead pelas etapas do funil."
+    : "Movimente cada lead pelas etapas até o fechamento. Cada coluna é um estágio do funil.";
+
   return (
     <>
-      <PageHeader
-        eyebrow="Acompanhamento"
-        title="Pipeline"
-        description="Movimente cada lead pelas etapas até o fechamento. Cada coluna é um estágio do funil."
-      />
+      <PageHeader eyebrow={eyebrow} title="Pipeline" description={descricao} />
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {PIPELINE_ORDER.map((status) => {
@@ -112,15 +130,23 @@ export default async function PipelinePage() {
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
                         <span className="text-sm font-medium text-ink">{lead.nome}</span>
-                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: equipe?.cor }} title={equipe?.nome} />
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: equipe?.cor }}
+                          title={equipe?.nome}
+                        />
                       </div>
                       <p className="mb-3 text-xs text-ink-muted">{lead.interesse}</p>
-                      <div className="mb-3 text-xs text-ink-faint">{lead.regiao} • {lead.faixaValor}</div>
+                      <div className="mb-3 text-xs text-ink-faint">
+                        {lead.regiao} • {lead.faixaValor}
+                      </div>
                       <div className="flex items-center justify-between border-t border-base-border pt-2.5">
                         {corretor ? (
                           <div className="flex items-center gap-2">
                             <Avatar iniciais={corretor.avatarIniciais} cor={equipe?.cor} size={24} />
-                            <span className="text-xs text-ink-muted">{corretor.nome.split(" ")[0]}</span>
+                            <span className="text-xs text-ink-muted">
+                              {corretor.nome.split(" ")[0]}
+                            </span>
                           </div>
                         ) : (
                           <span className="text-xs text-warn">Aguardando distribuição</span>

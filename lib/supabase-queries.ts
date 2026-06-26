@@ -146,6 +146,7 @@ export async function fetchCorretores(): Promise<Corretor[]> {
     emPlantao: Boolean(row.em_plantao),
     ativo: Boolean(row.ativo),
     avatarIniciais: iniciais(row.nome ?? "?"),
+    usuarioId: row.usuario_id ? String(row.usuario_id) : null,
   }));
 }
 
@@ -238,13 +239,15 @@ export interface DadosEscopados {
   dados: DadosLeadMaster;
   usuario: UsuarioAtual | null;
   semEquipe: boolean;
+  semCorretorVinculado: boolean;
+  corretorId: string | null;
 }
 
 export async function fetchTudoEscopado(): Promise<DadosEscopados> {
   const [dados, usuario] = await Promise.all([fetchTudo(), fetchUsuarioAtual()]);
 
   if (isMockMode || !usuario || usuario.role === "admin") {
-    return { dados, usuario, semEquipe: false };
+    return { dados, usuario, semEquipe: false, semCorretorVinculado: false, corretorId: null };
   }
 
   if (usuario.role === "gestor") {
@@ -253,6 +256,8 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
         dados: { equipes: [], corretores: [], pistas: [], vendas: [] },
         usuario,
         semEquipe: true,
+        semCorretorVinculado: false,
+        corretorId: null,
       };
     }
     const { equipeId } = usuario;
@@ -265,15 +270,66 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
       dados: { equipes, corretores, pistas, vendas },
       usuario,
       semEquipe: false,
+      semCorretorVinculado: false,
+      corretorId: null,
     };
   }
 
-  // corretor: sem acesso a dados globais
+  // corretor: filtrar para dados do próprio corretor via usuario_id
+  const corretorVinculado = dados.corretores.find(
+    (c) => c.usuarioId === usuario.id
+  ) ?? null;
+
+  if (!corretorVinculado) {
+    return {
+      dados: { equipes: [], corretores: [], pistas: [], vendas: [] },
+      usuario,
+      semEquipe: false,
+      semCorretorVinculado: true,
+      corretorId: null,
+    };
+  }
+
+  const corretorId = corretorVinculado.id;
+  const equipes = dados.equipes.filter((e) => e.id === corretorVinculado.equipeId);
+  const corretores = [corretorVinculado];
+  const pistas = dados.pistas.filter((l) => l.corretorId === corretorId);
+  const vendas = dados.vendas.filter((v) => v.corretorId === corretorId);
+
   return {
-    dados: { equipes: [], corretores: [], pistas: [], vendas: [] },
+    dados: { equipes, corretores, pistas, vendas },
     usuario,
     semEquipe: false,
+    semCorretorVinculado: false,
+    corretorId,
   };
+}
+
+// =====================================================================
+// USUÁRIOS CORRETORES (para painel admin de vínculo)
+// =====================================================================
+
+export interface UsuarioCorretor {
+  id: string;
+  nome: string;
+}
+
+export async function fetchUsuariosCorretores(): Promise<UsuarioCorretor[]> {
+  if (isMockMode) return [];
+
+  const sb = createSupabaseServer();
+  const { data, error } = await sb
+    .from("usuarios")
+    .select("id, nome")
+    .eq("role", "corretor")
+    .eq("ativo", true)
+    .order("nome", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: String(row.id),
+    nome: String(row.nome ?? "—"),
+  }));
 }
 
 // =====================================================================

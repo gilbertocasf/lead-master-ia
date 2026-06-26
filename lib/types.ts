@@ -28,6 +28,7 @@ export interface Corretor {
   emPlantao: boolean;
   ativo: boolean;
   avatarIniciais: string;
+  usuarioId?: string | null; // vínculo com usuarios.id (login)
 }
 
 export interface Lead {

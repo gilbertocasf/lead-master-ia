@@ -15,7 +15,7 @@ function iniciais(nome: string): string {
   return nome.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 }
 
-const NAV = [
+const NAV_TODOS = [
   { href: "/", label: "Dashboard", icon: GridIcon },
   { href: "/leads", label: "Leads", icon: InboxIcon },
   { href: "/pipeline", label: "Pipeline", icon: ColumnsIcon },
@@ -23,6 +23,8 @@ const NAV = [
   { href: "/equipes", label: "Equipes", icon: ShieldIcon },
   { href: "/ranking", label: "Ranking VGV", icon: TrophyIcon },
 ];
+
+const HREFS_CORRETOR = new Set(["/", "/leads", "/pipeline"]);
 
 export function Sidebar({
   open,
@@ -34,6 +36,11 @@ export function Sidebar({
   profile: UserProfile | null;
 }) {
   const pathname = usePathname();
+
+  const nav =
+    profile?.role === "corretor"
+      ? NAV_TODOS.filter((item) => HREFS_CORRETOR.has(item.href))
+      : NAV_TODOS;
 
   return (
     <>
@@ -64,9 +71,9 @@ export function Sidebar({
           </div>
         </div>
 
-        {/* Navegação */}
+        {/* Navegação filtrada por role */}
         <nav className="flex-1 space-y-1 px-3 py-2">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {nav.map(({ href, label, icon: Icon }) => {
             const active =
               href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (

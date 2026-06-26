@@ -2,16 +2,65 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { ComingSoonButton } from "@/components/ui/ComingSoonButton";
-import { fetchTudo, getRanking } from "@/lib/supabase-queries";
+import { fetchTudoEscopado, getRanking } from "@/lib/supabase-queries";
 import { formatBRLCompact } from "@/lib/format";
 
 export default async function EquipesPage() {
-  const dados = await fetchTudo();
+  const { dados, usuario, semEquipe } = await fetchTudoEscopado();
+
+  if (usuario?.role === "corretor") {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Organização"
+          title="Equipes"
+          description="Estrutura das equipes comerciais."
+        />
+        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
+          <p className="text-sm font-semibold text-ink-muted">Área restrita</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Esta seção está disponível para gestores e administradores.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  if (semEquipe) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Organização"
+          title="Equipes"
+          description="Estrutura das equipes comerciais."
+        />
+        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+          <svg
+            viewBox="0 0 24 24"
+            className="mx-auto mb-3 h-8 w-8 text-warn"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Sua conta de gestor ainda não foi associada a uma equipe. Solicite ao
+            administrador que preencha o campo{" "}
+            <span className="font-medium text-ink">equipe_id</span> na tabela{" "}
+            <span className="font-medium text-ink">usuarios</span>.
+          </p>
+        </div>
+      </>
+    );
+  }
+
   const equipes = dados.equipes;
   const corretores = dados.corretores;
   const leads = dados.pistas;
-  // O banco guarda o nome do gerente em equipe.gerenteId (texto).
-  // Reconstruímos a lista no formato que o JSX espera (.nome / .equipeId).
   const gerentes = equipes.map((e) => ({
     id: e.id,
     nome: e.gerenteId,
@@ -19,17 +68,28 @@ export default async function EquipesPage() {
   }));
   const buildRanking = (equipeId?: string) => getRanking(dados, equipeId);
 
+  // Botão "Nova equipe" apenas para admin
+  const isAdmin = usuario?.role === "admin";
+
+  // Descrição adaptada para gestor
+  const descricao =
+    usuario?.role === "gestor" && equipes.length === 1
+      ? `Você gerencia a equipe ${equipes[0].nome}. Acompanhe os corretores e a ordem de plantão.`
+      : "A imobiliária opera com múltiplas equipes. Cada gerente distribui os leads da sua fila seguindo a ordem de plantão.";
+
   return (
     <>
       <PageHeader
         eyebrow="Organização"
         title="Equipes"
-        description="A imobiliária opera com duas equipes. Cada gerente distribui os leads da sua fila seguindo a ordem de plantão."
+        description={descricao}
         action={
-          <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action/90">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Nova equipe
-          </ComingSoonButton>
+          isAdmin ? (
+            <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action/90">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Nova equipe
+            </ComingSoonButton>
+          ) : null
         }
       />
 
@@ -51,7 +111,6 @@ export default async function EquipesPage() {
                 action={<span className="h-3 w-3 rounded-full" style={{ backgroundColor: eq.cor }} />}
               />
 
-              {/* Resumo da equipe */}
               <div className="grid grid-cols-3 gap-2 px-5 py-4 text-center">
                 <div>
                   <div className="tnum font-display text-lg font-bold text-gold-soft">{formatBRLCompact(vgvEquipe)}</div>
@@ -67,7 +126,6 @@ export default async function EquipesPage() {
                 </div>
               </div>
 
-              {/* Lista ordenada de plantão */}
               <div className="border-t border-base-border px-5 py-4">
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-faint">
                   Ordem de plantão

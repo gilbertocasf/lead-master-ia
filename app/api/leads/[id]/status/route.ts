@@ -38,7 +38,7 @@ export async function PATCH(
   // 2. Buscar perfil do usuário autenticado
   const { data: usuario } = await sbServer
     .from("usuarios")
-    .select("id, imobiliaria_id, role")
+    .select("id, imobiliaria_id, role, equipe_id")
     .eq("auth_user_id", user.id)
     .eq("ativo", true)
     .single();
@@ -68,7 +68,24 @@ export async function PATCH(
   const lead_id = params.id;
   const admin = createSupabaseAdmin();
 
-  // 4. Se corretor, verificar que o lead pertence a ele
+  // 4a. Se gestor, validar que o lead pertence à própria equipe
+  if (usuario.role === "gestor") {
+    if (!usuario.equipe_id) {
+      return NextResponse.json({ erro: "gestor_sem_equipe" }, { status: 403 });
+    }
+    const { data: leadCheck } = await admin
+      .from("leads")
+      .select("equipe_id")
+      .eq("id", lead_id)
+      .eq("imobiliaria_id", usuario.imobiliaria_id)
+      .single();
+
+    if (!leadCheck || leadCheck.equipe_id !== usuario.equipe_id) {
+      return NextResponse.json({ erro: "sem_permissao" }, { status: 403 });
+    }
+  }
+
+  // 4b. Se corretor, verificar que o lead pertence a ele
   if (usuario.role === "corretor") {
     const [{ data: lead }, { data: corretor }] = await Promise.all([
       admin

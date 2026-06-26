@@ -2,11 +2,62 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { ComingSoonButton } from "@/components/ui/ComingSoonButton";
-import { fetchTudo, getRanking } from "@/lib/supabase-queries";
+import { fetchTudoEscopado, getRanking } from "@/lib/supabase-queries";
 import { formatBRLCompact } from "@/lib/format";
 
 export default async function CorretoresPage() {
-  const dados = await fetchTudo();
+  const { dados, usuario, semEquipe } = await fetchTudoEscopado();
+
+  if (usuario?.role === "corretor") {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Equipe comercial"
+          title="Corretores"
+          description="Quadro de corretores por equipe."
+        />
+        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
+          <p className="text-sm font-semibold text-ink-muted">Área restrita</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Esta seção está disponível para gestores e administradores.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  if (semEquipe) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Equipe comercial"
+          title="Corretores"
+          description="Quadro de corretores por equipe."
+        />
+        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+          <svg
+            viewBox="0 0 24 24"
+            className="mx-auto mb-3 h-8 w-8 text-warn"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Sua conta de gestor ainda não foi associada a uma equipe. Solicite ao
+            administrador que preencha o campo{" "}
+            <span className="font-medium text-ink">equipe_id</span> na tabela{" "}
+            <span className="font-medium text-ink">usuarios</span>.
+          </p>
+        </div>
+      </>
+    );
+  }
+
   const corretores = dados.corretores;
   const leads = dados.pistas;
   const getEquipe = (id: string) => dados.equipes.find((e) => e.id === id);
@@ -24,6 +75,9 @@ export default async function CorretoresPage() {
     };
   };
 
+  // Botão "Adicionar corretor" apenas para admin
+  const isAdmin = usuario?.role === "admin";
+
   return (
     <>
       <PageHeader
@@ -31,10 +85,12 @@ export default async function CorretoresPage() {
         title="Corretores"
         description="Quadro de corretores por equipe, com status de plantão e desempenho de vendas."
         action={
-          <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action/90">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Adicionar corretor
-          </ComingSoonButton>
+          isAdmin ? (
+            <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action/90">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Adicionar corretor
+            </ComingSoonButton>
+          ) : null
         }
       />
 

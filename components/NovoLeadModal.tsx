@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Equipe } from "@/lib/types";
+import type { Corretor, Equipe } from "@/lib/types";
 
 interface NovoLeadModalProps {
   equipes: Equipe[];
+  corretores: Corretor[];
 }
 
 interface ErroState {
@@ -16,13 +17,15 @@ interface ErroState {
 const ESTADO_VAZIO = (primeiraEquipe: string) => ({
   nome: "",
   telefone: "",
-  origem: "Outro",
+  origem: "Outro" as const,
   equipe_id: primeiraEquipe,
   interesse: "",
   faixa_valor: "",
+  temCaptador: false,
+  corretor_id: "",
 });
 
-export function NovoLeadModal({ equipes }: NovoLeadModalProps) {
+export function NovoLeadModal({ equipes, corretores }: NovoLeadModalProps) {
   const router = useRouter();
   const primeiraEquipe = equipes[0]?.id ?? "";
 
@@ -31,6 +34,11 @@ export function NovoLeadModal({ equipes }: NovoLeadModalProps) {
   const [erro, setErro] = useState<ErroState | null>(null);
   const [form, setForm] = useState(ESTADO_VAZIO(primeiraEquipe));
 
+  // Corretores ativos filtrados pela equipe selecionada no formulário
+  const corretoresDaEquipe = corretores.filter(
+    (c) => c.equipeId === form.equipe_id && c.ativo
+  );
+
   function fechar() {
     setOpen(false);
     setErro(null);
@@ -38,20 +46,51 @@ export function NovoLeadModal({ equipes }: NovoLeadModalProps) {
   }
 
   function campo(key: keyof typeof form) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setForm((f) => ({ ...f, [key]: e.target.value }));
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setForm((f) => {
+        const novo = { ...f, [key]: e.target.value };
+        // Ao trocar de equipe, zera o corretor selecionado
+        if (key === "equipe_id") novo.corretor_id = "";
+        return novo;
+      });
+    };
+  }
+
+  function toggleCaptador(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm((f) => ({ ...f, temCaptador: e.target.checked, corretor_id: "" }));
   }
 
   async function submeter(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setErro(null);
 
+    // Validação client-side: captador marcado mas não selecionado
+    if (form.temCaptador && !form.corretor_id) {
+      setErro({ tipo: "corretor_obrigatorio" });
+      return;
+    }
+
+    setLoading(true);
+
     try {
+      const payload: Record<string, string | null> = {
+        nome: form.nome,
+        telefone: form.telefone,
+        origem: form.origem,
+        equipe_id: form.equipe_id,
+        interesse: form.interesse || null,
+        faixa_valor: form.faixa_valor || null,
+      };
+
+      // Cenário A: inclui corretor_id apenas se captador foi identificado
+      if (form.temCaptador && form.corretor_id) {
+        payload.corretor_id = form.corretor_id;
+      }
+
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -77,6 +116,21 @@ export function NovoLeadModal({ equipes }: NovoLeadModalProps) {
 
   const inputCls =
     "w-full rounded-xl border border-base-border bg-base-raised px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-action focus:outline-none";
+
+  function mensagemErro(tipo: string): string {
+    switch (tipo) {
+      case "corretor_obrigatorio":
+        return "Selecione o corretor que captou o lead.";
+      case "corretor_invalido":
+        return "Corretor inválido ou não pertence à equipe selecionada.";
+      case "sem_equipe_disponivel":
+        return "Nenhuma equipe ativa disponível.";
+      case "erro_rede":
+        return "Erro de conexão. Verifique a rede e tente novamente.";
+      default:
+        return "Erro ao cadastrar lead. Tente novamente.";
+    }
+  }
 
   return (
     <>
@@ -156,9 +210,7 @@ export function NovoLeadModal({ equipes }: NovoLeadModalProps) {
               {/* Erro genérico */}
               {erro && erro.tipo !== "duplicata" && (
                 <div className="rounded-xl border border-loss/30 bg-loss/10 px-4 py-3 text-sm text-loss">
-                  {erro.tipo === "sem_equipe_disponivel"
-                    ? "Nenhuma equipe ativa disponível."
-                    : "Erro ao cadastrar lead. Tente novamente."}
+                  {mensagemErro(erro.tipo)}
                 </div>
               )}
 
@@ -213,18 +265,24 @@ export function NovoLeadModal({ equipes }: NovoLeadModalProps) {
                   <label className="mb-1.5 block text-xs font-medium text-ink-muted">
                     Equipe *
                   </label>
-                  <select
-                    required
-                    value={form.equipe_id}
-                    onChange={campo("equipe_id")}
-                    className={inputCls}
-                  >
-                    {equipes.map((eq) => (
-                      <option key={eq.id} value={eq.id}>
-                        {eq.nome}
-                      </option>
-                    ))}
-                  </select>
+                  {equipes.length === 1 ? (
+                    <div className={`${inputCls} cursor-default select-none opacity-70`}>
+                      {equipes[0].nome}
+                    </div>
+                  ) : (
+                    <select
+                      required
+                      value={form.equipe_id}
+                      onChange={campo("equipe_id")}
+                      className={inputCls}
+                    >
+                      {equipes.map((eq) => (
+                        <option key={eq.id} value={eq.id}>
+                          {eq.nome}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 
@@ -255,6 +313,63 @@ export function NovoLeadModal({ equipes }: NovoLeadModalProps) {
                   placeholder="Ex.: R$ 400–600 mil"
                 />
               </div>
+
+              {/* ── Cenário A: captador conhecido ─────────────────────── */}
+              <div className="rounded-xl border border-base-border bg-base-raised/40 px-4 py-3">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.temCaptador}
+                    onChange={toggleCaptador}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-action"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-ink">
+                      Lead captado por corretor específico
+                    </span>
+                    <p className="mt-0.5 text-xs text-ink-muted">
+                      Marque quando o corretor trouxe o cliente por fora do
+                      sistema (indicação, plantão físico, contato direto).
+                    </p>
+                  </div>
+                </label>
+
+                {/* Seletor de corretor — exibido somente se temCaptador */}
+                {form.temCaptador && (
+                  <div className="mt-3">
+                    <label className="mb-1.5 block text-xs font-medium text-ink-muted">
+                      Corretor captador *
+                    </label>
+                    {corretoresDaEquipe.length === 0 ? (
+                      <p className="text-xs text-warn">
+                        Nenhum corretor ativo encontrado nesta equipe.
+                      </p>
+                    ) : (
+                      <select
+                        required={form.temCaptador}
+                        value={form.corretor_id}
+                        onChange={campo("corretor_id")}
+                        className={inputCls}
+                      >
+                        <option value="">Selecionar corretor…</option>
+                        {corretoresDaEquipe.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nome}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Distribuição automática — nota informativa */}
+              {!form.temCaptador && (
+                <p className="text-xs text-ink-faint">
+                  Sem captador definido: o lead será distribuído automaticamente
+                  ao próximo corretor de plantão da equipe.
+                </p>
+              )}
 
               {/* Ações */}
               <div className="flex justify-end gap-2 pt-1">

@@ -54,6 +54,46 @@ function comoOrigem(v: unknown): LeadSource {
 }
 
 // =====================================================================
+// PERFIL DO USUÁRIO ATUAL
+// =====================================================================
+
+export interface UsuarioAtual {
+  id: string;
+  imobiliariaId: string;
+  role: "admin" | "gestor" | "corretor";
+  nome: string;
+  equipeId: string | null;
+}
+
+export async function fetchUsuarioAtual(): Promise<UsuarioAtual | null> {
+  if (isMockMode) {
+    return { id: "mock-user", imobiliariaId: "mock-imob", role: "gestor", nome: "Gerente Demo", equipeId: null };
+  }
+
+  const sb = createSupabaseServer();
+  const { data: { user }, error: authError } = await sb.auth.getUser();
+  if (authError || !user) return null;
+
+  const { data } = await sb
+    .from("usuarios")
+    .select("id, imobiliaria_id, role, nome, equipe_id")
+    .eq("auth_user_id", user.id)
+    .eq("ativo", true)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    id: String(data.id),
+    imobiliariaId: String(data.imobiliaria_id),
+    role: data.role as "admin" | "gestor" | "corretor",
+    nome: data.nome as string,
+    equipeId: data.equipe_id ? String(data.equipe_id) : null,
+  };
+}
+
+
+// =====================================================================
 // QUERIES BASE
 // =====================================================================
 // Regra de fallback:
@@ -188,6 +228,52 @@ export async function fetchTudo(): Promise<DadosLeadMaster> {
     fetchVendas(),
   ]);
   return { equipes, corretores, pistas, vendas };
+}
+
+// =====================================================================
+// ESCOPO POR ROLE
+// =====================================================================
+
+export interface DadosEscopados {
+  dados: DadosLeadMaster;
+  usuario: UsuarioAtual | null;
+  semEquipe: boolean;
+}
+
+export async function fetchTudoEscopado(): Promise<DadosEscopados> {
+  const [dados, usuario] = await Promise.all([fetchTudo(), fetchUsuarioAtual()]);
+
+  if (isMockMode || !usuario || usuario.role === "admin") {
+    return { dados, usuario, semEquipe: false };
+  }
+
+  if (usuario.role === "gestor") {
+    if (!usuario.equipeId) {
+      return {
+        dados: { equipes: [], corretores: [], pistas: [], vendas: [] },
+        usuario,
+        semEquipe: true,
+      };
+    }
+    const { equipeId } = usuario;
+    const equipes = dados.equipes.filter((e) => e.id === equipeId);
+    const corretores = dados.corretores.filter((c) => c.equipeId === equipeId);
+    const corretoresIds = new Set(corretores.map((c) => c.id));
+    const pistas = dados.pistas.filter((l) => l.equipeId === equipeId);
+    const vendas = dados.vendas.filter((v) => corretoresIds.has(v.corretorId));
+    return {
+      dados: { equipes, corretores, pistas, vendas },
+      usuario,
+      semEquipe: false,
+    };
+  }
+
+  // corretor: sem acesso a dados globais
+  return {
+    dados: { equipes: [], corretores: [], pistas: [], vendas: [] },
+    usuario,
+    semEquipe: false,
+  };
 }
 
 // =====================================================================

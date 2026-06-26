@@ -4,7 +4,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { Avatar } from "@/components/ui/Avatar";
 import { StatusPill } from "@/components/ui/StatusPill";
 import {
-  fetchTudo,
+  fetchTudoEscopado,
   getKPIs,
   getRanking,
   getFunil,
@@ -13,7 +13,60 @@ import { formatBRLCompact, formatPercent, timeAgo } from "@/lib/format";
 import { PIPELINE_ORDER, STATUS_LABEL, RankingItem } from "@/lib/types";
 
 export default async function DashboardPage() {
-  const dados = await fetchTudo();
+  const { dados, usuario, semEquipe } = await fetchTudoEscopado();
+
+  if (usuario?.role === "corretor") {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Visão geral"
+          title="Dashboard"
+          description="Painel operacional."
+        />
+        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
+          <p className="text-sm font-semibold text-ink-muted">Área restrita</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            O dashboard está disponível para gestores e administradores.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  if (semEquipe) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Visão geral"
+          title="Dashboard"
+          description="Painel operacional."
+        />
+        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+          <svg
+            viewBox="0 0 24 24"
+            className="mx-auto mb-3 h-8 w-8 text-warn"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-sm font-semibold text-warn">
+            Conta sem equipe vinculada
+          </p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Sua conta de gestor ainda não foi associada a uma equipe. Solicite ao
+            administrador que preencha o campo{" "}
+            <span className="font-medium text-ink">equipe_id</span> na tabela{" "}
+            <span className="font-medium text-ink">usuarios</span>.
+          </p>
+        </div>
+      </>
+    );
+  }
+
   const leads = dados.pistas;
   const getCorretor = (id: string | null) =>
     id ? dados.corretores.find((c) => c.id === id) ?? null : null;
@@ -29,12 +82,22 @@ export default async function DashboardPage() {
 
   const maxFunil = Math.max(...PIPELINE_ORDER.map((s) => funil[s]), 1);
 
+  // Adapta eyebrow e descrição para gestor com equipe definida
+  const nomeEquipeGestor =
+    usuario?.role === "gestor" && dados.equipes.length === 1
+      ? dados.equipes[0].nome
+      : null;
+
   return (
     <>
       <PageHeader
-        eyebrow="Visão geral"
+        eyebrow={nomeEquipeGestor ? `Equipe ${nomeEquipeGestor}` : "Visão geral"}
         title="Dashboard"
-        description="Desempenho consolidado da imobiliária — leads, conversão e VGV do período."
+        description={
+          nomeEquipeGestor
+            ? `Desempenho da equipe ${nomeEquipeGestor} — leads, conversão e VGV do período.`
+            : "Desempenho consolidado da imobiliária — leads, conversão e VGV do período."
+        }
       />
 
       {/* KPIs */}
@@ -46,7 +109,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        {/* PÓDIO VGV — elemento assinatura */}
+        {/* PÓDIO VGV */}
         <Card className="xl:col-span-2">
           <CardHeader
             title="Pódio VGV"
@@ -58,11 +121,8 @@ export default async function DashboardPage() {
             }
           />
           <div className="grid grid-cols-3 items-end gap-3 px-5 py-8 sm:gap-6 sm:px-8">
-            {/* 2º lugar */}
             {podio[1] && <PodiumStep item={podio[1]} height="h-24" medal="2" />}
-            {/* 1º lugar */}
             {podio[0] && <PodiumStep item={podio[0]} height="h-32" medal="1" champion />}
-            {/* 3º lugar */}
             {podio[2] && <PodiumStep item={podio[2]} height="h-16" medal="3" />}
           </div>
         </Card>

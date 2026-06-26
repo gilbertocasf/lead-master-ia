@@ -5,36 +5,101 @@ import { Avatar } from "@/components/ui/Avatar";
 import { NovoLeadModal } from "@/components/NovoLeadModal";
 import { ComingSoonButton } from "@/components/ui/ComingSoonButton";
 import {
-  fetchTudo,
+  fetchTudoEscopado,
   getProximoPlantao,
 } from "@/lib/supabase-queries";
 import { timeAgo } from "@/lib/format";
 
 export default async function LeadsPage() {
-  const dados = await fetchTudo();
-  const leads = dados.pistas;
-  const equipes = dados.equipes;
-  const getCorretor = (id: string | null) =>
+  const { dados, usuario, semEquipe } = await fetchTudoEscopado();
+
+  if (usuario?.role === "corretor") {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Captação"
+          title="Leads"
+          description="Gestão de leads e distribuição automática."
+        />
+        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
+          <p className="text-sm font-semibold text-ink-muted">Área restrita</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            O cadastro de leads está disponível para gestores e administradores.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  if (semEquipe) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Captação"
+          title="Leads"
+          description="O gerente cadastra o lead e o sistema distribui automaticamente ao próximo corretor de plantão."
+        />
+        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+          <svg
+            viewBox="0 0 24 24"
+            className="mx-auto mb-3 h-8 w-8 text-warn"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-sm font-semibold text-warn">
+            Conta sem equipe vinculada
+          </p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Sua conta de gestor ainda não foi associada a uma equipe.
+            Solicite ao administrador que preencha o campo{" "}
+            <span className="font-medium text-ink">equipe_id</span> na tabela{" "}
+            <span className="font-medium text-ink">usuarios</span>.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  // Dados já escopados por fetchTudoEscopado:
+  //   admin  → todas as equipes e todos os leads
+  //   gestor → apenas a própria equipe
+  const equipesVisiveis = dados.equipes;
+  const leadsVisiveis = dados.pistas;
+  const corretoresParaModal = dados.corretores;
+
+  // Corretor já foi tratado no early return acima; admin e gestor podem ver o form
+  const podeVerForm = usuario !== null;
+
+  const getCorretorInfo = (id: string | null) =>
     id ? dados.corretores.find((c) => c.id === id) ?? null : null;
-  const getEquipe = (id: string) => dados.equipes.find((e) => e.id === id);
+  const getEquipeInfo = (id: string) => dados.equipes.find((e) => e.id === id);
   const proximoPlantao = (equipeId: string) =>
     getProximoPlantao(dados, equipeId);
 
-  const naFila = leads.filter((l) => l.corretorId === null);
-  const distribuidos = leads.filter((l) => l.corretorId !== null);
+  const naFila = leadsVisiveis.filter((l) => l.corretorId === null);
+  const distribuidos = leadsVisiveis.filter((l) => l.corretorId !== null);
 
   return (
     <>
       <PageHeader
         eyebrow="Captação"
         title="Leads"
-        description="O captador cadastra o lead já com a equipe de destino. O gerente daquela equipe distribui ao corretor de plantão."
-        action={<NovoLeadModal equipes={equipes} />}
+        description="O gerente cadastra o lead e o sistema distribui automaticamente ao próximo corretor de plantão."
+        action={
+          podeVerForm ? (
+            <NovoLeadModal equipes={equipesVisiveis} corretores={corretoresParaModal} />
+          ) : null
+        }
       />
 
       {/* Fila de distribuição por equipe */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {equipes.map((eq) => {
+        {equipesVisiveis.map((eq) => {
           const fila = naFila.filter((l) => l.equipeId === eq.id);
           const proximo = proximoPlantao(eq.id);
           return (
@@ -49,7 +114,6 @@ export default async function LeadsPage() {
                   </span>
                 }
               />
-              {/* Sugestão de plantão */}
               {proximo && fila.length > 0 && (
                 <div className="mx-5 mt-4 flex items-center gap-3 rounded-xl border border-gold/30 bg-gold/10 px-3 py-2.5">
                   <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-gold" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
@@ -85,7 +149,7 @@ export default async function LeadsPage() {
 
       {/* Tabela completa */}
       <Card className="mt-6">
-        <CardHeader title="Todos os leads" subtitle={`${leads.length} no total • ${distribuidos.length} distribuídos`} />
+        <CardHeader title="Todos os leads" subtitle={`${leadsVisiveis.length} no total • ${distribuidos.length} distribuídos`} />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -99,9 +163,9 @@ export default async function LeadsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-base-border">
-              {leads.map((lead) => {
-                const corretor = getCorretor(lead.corretorId);
-                const equipe = getEquipe(lead.equipeId);
+              {leadsVisiveis.map((lead) => {
+                const corretor = getCorretorInfo(lead.corretorId);
+                const equipe = getEquipeInfo(lead.equipeId);
                 return (
                   <tr key={lead.id} className="hover:bg-base-raised/40">
                     <td className="px-5 py-3">

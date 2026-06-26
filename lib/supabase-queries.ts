@@ -109,6 +109,7 @@ export async function fetchEquipes(): Promise<Equipe[]> {
   const { data, error } = await sb
     .from("equipes")
     .select("id, nome, gerente, created_at")
+    .eq("ativo", true)
     .order("created_at", { ascending: true });
 
   if (error || !data) {
@@ -132,6 +133,7 @@ export async function fetchCorretores(): Promise<Corretor[]> {
     .select(
       "id, nome, equipe_id, ordem_plantao, ativo, em_plantao, ultimo_lead_recebido_em, usuario_id, created_at"
     )
+    .eq("ativo", true)
     .order("ordem_plantao", { ascending: true });
 
   if (error || !data) {

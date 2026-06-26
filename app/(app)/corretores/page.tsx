@@ -8,6 +8,7 @@ import {
 } from "@/lib/supabase-queries";
 import { EditarVinculoCorretorModal } from "@/components/EditarVinculoCorretorModal";
 import { NovoCorretorModal } from "@/components/NovoCorretorModal";
+import { DesativarCorretorModal } from "@/components/DesativarCorretorModal";
 import { formatBRLCompact } from "@/lib/format";
 
 export default async function CorretoresPage() {
@@ -142,13 +143,16 @@ export default async function CorretoresPage() {
                 Ordem de plantão: <span className="text-ink-muted">{c.ordemPlantao}º</span>
               </div>
 
-              {/* Botão de edição de vínculo — apenas para admin */}
+              {/* Botões administrativos — apenas para admin */}
               {isAdmin && (
-                <EditarVinculoCorretorModal
-                  corretor={c}
-                  equipes={dados.equipes}
-                  usuariosCorretores={usuariosCorretores}
-                />
+                <>
+                  <EditarVinculoCorretorModal
+                    corretor={c}
+                    equipes={dados.equipes}
+                    usuariosCorretores={usuariosCorretores}
+                  />
+                  <DesativarCorretorModal corretor={c} />
+                </>
               )}
             </Card>
           );

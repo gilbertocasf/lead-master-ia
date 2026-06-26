@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { NovaEquipeModal } from "@/components/NovaEquipeModal";
+import { ExcluirEquipeModal } from "@/components/ExcluirEquipeModal";
 import { fetchTudoEscopado, getRanking } from "@/lib/supabase-queries";
 import { formatBRLCompact } from "@/lib/format";
 
@@ -138,6 +139,12 @@ export default async function EquipesPage() {
                   ))}
                 </div>
               </div>
+
+              {isAdmin && (
+                <div className="border-t border-base-border px-5 py-3">
+                  <ExcluirEquipeModal equipe={eq} />
+                </div>
+              )}
             </Card>
           );
         })}

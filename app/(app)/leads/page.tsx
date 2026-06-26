@@ -277,7 +277,12 @@ export default async function LeadsPage() {
                       </span>
                     </td>
                     <td className="hidden px-5 py-3 text-ink-muted md:table-cell">
-                      {corretor ? corretor.nome : <span className="text-warn">Na fila</span>}
+                      {lead.corretorId === null
+                        ? <span className="text-warn">Na fila</span>
+                        : corretor
+                          ? corretor.nome
+                          : <span className="text-ink-faint">—</span>
+                      }
                     </td>
                     <td className="px-5 py-3">
                       <StatusPill status={lead.status} />

@@ -9,6 +9,7 @@ const ROLE_LABEL: Record<string, string> = {
   admin: "Administrador",
   gestor: "Gestor",
   corretor: "Corretor",
+  captador: "Captador",
 };
 
 function iniciais(nome: string): string {
@@ -24,7 +25,7 @@ const NAV_TODOS = [
   { href: "/ranking", label: "Ranking VGV", icon: TrophyIcon },
 ];
 
-const HREFS_CORRETOR = new Set(["/", "/leads", "/pipeline"]);
+const HREFS_RESTRITO = new Set(["/", "/leads", "/pipeline"]);
 
 export function Sidebar({
   open,
@@ -38,8 +39,8 @@ export function Sidebar({
   const pathname = usePathname();
 
   const nav =
-    profile?.role === "corretor"
-      ? NAV_TODOS.filter((item) => HREFS_CORRETOR.has(item.href))
+    profile?.role === "corretor" || profile?.role === "captador"
+      ? NAV_TODOS.filter((item) => HREFS_RESTRITO.has(item.href))
       : NAV_TODOS;
 
   return (

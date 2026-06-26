@@ -7,6 +7,7 @@ import type { Corretor, Equipe } from "@/lib/types";
 interface NovoLeadModalProps {
   equipes: Equipe[];
   corretores: Corretor[];
+  modoCaptador?: boolean;
 }
 
 interface ErroState {
@@ -26,7 +27,7 @@ const ESTADO_VAZIO = (primeiraEquipe: string) => ({
   corretor_id: "",
 });
 
-export function NovoLeadModal({ equipes, corretores }: NovoLeadModalProps) {
+export function NovoLeadModal({ equipes, corretores, modoCaptador = false }: NovoLeadModalProps) {
   const router = useRouter();
   const primeiraEquipe = equipes[0]?.id ?? "";
 
@@ -323,57 +324,63 @@ export function NovoLeadModal({ equipes, corretores }: NovoLeadModalProps) {
                 />
               </div>
 
-              {/* ── Cenário A: captador conhecido ─────────────────────── */}
-              <div className="rounded-xl border border-base-border bg-base-raised/40 px-4 py-3">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={form.temCaptador}
-                    onChange={toggleCaptador}
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-action"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-ink">
-                      Lead captado por corretor específico
-                    </span>
-                    <p className="mt-0.5 text-xs text-ink-muted">
-                      Marque quando o corretor trouxe o cliente por fora do
-                      sistema (indicação, plantão físico, contato direto).
-                    </p>
-                  </div>
-                </label>
-
-                {/* Seletor de corretor — exibido somente se temCaptador */}
-                {form.temCaptador && (
-                  <div className="mt-3">
-                    <label className="mb-1.5 block text-xs font-medium text-ink-muted">
-                      Corretor captador *
-                    </label>
-                    {corretoresDaEquipe.length === 0 ? (
-                      <p className="text-xs text-warn">
-                        Nenhum corretor ativo encontrado nesta equipe.
+              {/* ── Cenário A: captador conhecido (oculto no modo captador) ── */}
+              {!modoCaptador && (
+                <div className="rounded-xl border border-base-border bg-base-raised/40 px-4 py-3">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={form.temCaptador}
+                      onChange={toggleCaptador}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-action"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-ink">
+                        Lead captado por corretor específico
+                      </span>
+                      <p className="mt-0.5 text-xs text-ink-muted">
+                        Marque quando o corretor trouxe o cliente por fora do
+                        sistema (indicação, plantão físico, contato direto).
                       </p>
-                    ) : (
-                      <select
-                        required={form.temCaptador}
-                        value={form.corretor_id}
-                        onChange={campo("corretor_id")}
-                        className={inputCls}
-                      >
-                        <option value="">Selecionar corretor…</option>
-                        {corretoresDaEquipe.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.nome}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                )}
-              </div>
+                    </div>
+                  </label>
 
-              {/* Distribuição automática — nota informativa */}
-              {!form.temCaptador && (
+                  {form.temCaptador && (
+                    <div className="mt-3">
+                      <label className="mb-1.5 block text-xs font-medium text-ink-muted">
+                        Corretor captador *
+                      </label>
+                      {corretoresDaEquipe.length === 0 ? (
+                        <p className="text-xs text-warn">
+                          Nenhum corretor ativo encontrado nesta equipe.
+                        </p>
+                      ) : (
+                        <select
+                          required={form.temCaptador}
+                          value={form.corretor_id}
+                          onChange={campo("corretor_id")}
+                          className={inputCls}
+                        >
+                          <option value="">Selecionar corretor…</option>
+                          {corretoresDaEquipe.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nome}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Nota: distribuição automática */}
+              {modoCaptador ? (
+                <p className="text-xs text-ink-faint">
+                  Lead será distribuído automaticamente ao próximo corretor de
+                  plantão da equipe. Você ficará registrado como captador.
+                </p>
+              ) : !form.temCaptador && (
                 <p className="text-xs text-ink-faint">
                   Sem captador definido: o lead será distribuído automaticamente
                   ao próximo corretor de plantão da equipe.

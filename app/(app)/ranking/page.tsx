@@ -12,7 +12,7 @@ export default async function RankingPage({
 }) {
   const { dados, usuario, semEquipe } = await fetchTudoEscopado();
 
-  if (usuario?.role === "corretor") {
+  if (usuario?.role === "corretor" || usuario?.role === "captador") {
     return (
       <>
         <PageHeader

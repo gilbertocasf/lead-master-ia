@@ -1,5 +1,6 @@
 import { isMockMode } from "./supabase";
 import { createSupabaseServer } from "./supabase-server";
+import { createSupabaseAdmin } from "./supabase-admin";
 import {
   Corretor,
   Equipe,
@@ -60,7 +61,7 @@ function comoOrigem(v: unknown): LeadSource {
 export interface UsuarioAtual {
   id: string;
   imobiliariaId: string;
-  role: "admin" | "gestor" | "corretor";
+  role: "admin" | "gestor" | "corretor" | "captador";
   nome: string;
   equipeId: string | null;
 }
@@ -250,6 +251,89 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
 
   if (isMockMode || !usuario || usuario.role === "admin") {
     return { dados, usuario, semEquipe: false, semCorretorVinculado: false, corretorId: null };
+  }
+
+  // ── Captador: vê apenas leads que ele cadastrou (requer migration 007) ──
+  if (usuario.role === "captador") {
+    let admin: ReturnType<typeof createSupabaseAdmin>;
+    try {
+      admin = createSupabaseAdmin();
+    } catch {
+      // Service role key não configurada — retorna dados vazios
+      return { dados: { equipes: dados.equipes, corretores: [], pistas: [], vendas: [] }, usuario, semEquipe: false, semCorretorVinculado: false, corretorId: null };
+    }
+
+    // Corretores via admin (captador ainda não tem policy RLS para corretores)
+    const { data: corretoresData } = await admin
+      .from("corretores")
+      .select("id, nome, equipe_id, ordem_plantao, ativo, em_plantao, usuario_id")
+      .eq("imobiliaria_id", usuario.imobiliariaId)
+      .eq("ativo", true)
+      .order("ordem_plantao", { ascending: true });
+
+    const corretores: Corretor[] = (corretoresData ?? []).map((row) => ({
+      id: String(row.id),
+      nome: row.nome ?? "—",
+      equipeId: String(row.equipe_id),
+      ordemPlantao: row.ordem_plantao ?? 0,
+      emPlantao: Boolean(row.em_plantao),
+      ativo: Boolean(row.ativo),
+      avatarIniciais: iniciais(row.nome ?? "?"),
+      usuarioId: row.usuario_id ? String(row.usuario_id) : null,
+    }));
+
+    // Leads do captador via anon client (RLS filtra por captador_id = current_usuario_id após migration 007)
+    // Se captador_id não existir ainda (migration não aplicada), retorna vazio
+    const sb = createSupabaseServer();
+    const { data: pistasData, error: pistasError } = await sb
+      .from(TABELA_PISTAS)
+      .select("id, nome, telefone, origem, interesse, faixa_valor, equipe_id, corretor_id, status, observacoes, created_at, distribuido_em")
+      .order("created_at", { ascending: false });
+
+    const pistas: Lead[] = pistasError ? [] : (pistasData ?? []).map((row) => ({
+      id: String(row.id),
+      nome: row.nome ?? "—",
+      telefone: row.telefone ?? "",
+      origem: comoOrigem(row.origem),
+      interesse: row.interesse ?? "",
+      regiao: "",
+      faixaValor: row.faixa_valor ?? "",
+      status: comoStatus(row.status),
+      equipeId: String(row.equipe_id),
+      corretorId: row.corretor_id ? String(row.corretor_id) : null,
+      captadorNome: usuario.nome,
+      criadoEm: row.created_at ?? new Date().toISOString(),
+      distribuidoEm: row.distribuido_em ?? null,
+      motivoPerda: comoStatus(row.status) === "perdido" ? row.observacoes ?? undefined : undefined,
+    }));
+
+    // Vendas dos leads captados
+    const pistasIds = pistas.map((p) => p.id);
+    let vendas: Venda[] = [];
+    if (pistasIds.length > 0) {
+      const { data: vendasData } = await admin
+        .from("vendas")
+        .select("id, corretor_id, lead_id, valor_vgv, data_venda, created_at")
+        .in("lead_id", pistasIds);
+
+      vendas = (vendasData ?? []).map((row) => ({
+        id: String(row.id),
+        leadId: row.lead_id ? String(row.lead_id) : "",
+        corretorId: String(row.corretor_id),
+        equipeId: "",
+        imovel: "",
+        vgv: Number(row.valor_vgv ?? 0),
+        fechadoEm: row.data_venda ?? row.created_at ?? new Date().toISOString(),
+      }));
+    }
+
+    return {
+      dados: { equipes: dados.equipes, corretores, pistas, vendas },
+      usuario,
+      semEquipe: false,
+      semCorretorVinculado: false,
+      corretorId: null,
+    };
   }
 
   if (usuario.role === "gestor") {

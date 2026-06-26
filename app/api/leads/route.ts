@@ -54,10 +54,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ erro: "nao_autenticado" }, { status: 401 });
   }
 
-  // 2. Buscar perfil do usuário autenticado (imobiliaria_id + role + equipe_id)
+  // 2. Buscar perfil do usuário autenticado (id + imobiliaria_id + role + equipe_id)
   const { data: usuario } = await sbServer
     .from("usuarios")
-    .select("imobiliaria_id, role, equipe_id")
+    .select("id, imobiliaria_id, role, equipe_id")
     .eq("auth_user_id", user.id)
     .eq("ativo", true)
     .single();
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Corretor comum não cadastra lead — apenas gestor ou admin
+  // Corretor comum não cadastra lead — admin, gestor e captador podem
   if (usuario.role === "corretor") {
     return NextResponse.json({ erro: "sem_permissao" }, { status: 403 });
   }
@@ -95,9 +95,10 @@ export async function POST(req: NextRequest) {
   const observacoes =
     typeof body.observacoes === "string" ? body.observacoes.trim() : null;
 
-  // corretor_id é opcional: presente no Cenário A (captador conhecido),
-  // ausente no Cenário B (distribuição automática por round-robin)
-  const corretor_id =
+  // corretor_id é opcional: presente no Cenário A (captador conhecido).
+  // Apenas admin e gestor podem usar — captador NUNCA escolhe corretor manualmente.
+  // Lemos aqui para validar formato, mas o enforcement por role acontece na Seção 4.
+  const corretor_id_payload =
     typeof body.corretor_id === "string" && body.corretor_id.trim()
       ? body.corretor_id.trim()
       : null;
@@ -118,8 +119,12 @@ export async function POST(req: NextRequest) {
   }
 
   // 4. Enforcement de escopo por role
-  //    Gestor: equipe_id sempre vem de usuarios.equipe_id (não do payload)
-  //    Admin:  equipe_id vem do payload normalmente
+  //
+  //  Regras:
+  //    Admin   → equipe_id do payload; corretor_id do payload (Cenário A)
+  //    Gestor  → equipe_id forçada para usuarios.equipe_id; corretor da própria equipe (Cenário A)
+  //    Captador → captador_id = usuarios.id; corretor_id SEMPRE null (sem Cenário A)
+  //    Corretor → bloqueado acima (retorna 403)
   let admin: ReturnType<typeof createSupabaseAdmin>;
   try {
     admin = createSupabaseAdmin();
@@ -130,31 +135,42 @@ export async function POST(req: NextRequest) {
       { status: 503 }
     );
   }
+
   let equipe_id: string | null = equipe_id_payload;
+  let corretor_id: string | null = null;
+  let captador_id: string | null = null;
 
   if (usuario.role === "gestor") {
     if (!usuario.equipe_id) {
       return NextResponse.json({ erro: "gestor_sem_equipe" }, { status: 403 });
     }
-    // Força equipe_id para a equipe do gestor — ignora o que veio do payload
     equipe_id = String(usuario.equipe_id);
 
-    // Se corretor_id foi enviado, valida que pertence à equipe do gestor
-    if (corretor_id) {
+    if (corretor_id_payload) {
       const { data: corretorCheck } = await admin
         .from("corretores")
         .select("id")
-        .eq("id", corretor_id)
+        .eq("id", corretor_id_payload)
         .eq("equipe_id", usuario.equipe_id)
+        .eq("ativo", true)
         .maybeSingle();
 
       if (!corretorCheck) {
         return NextResponse.json({ erro: "corretor_invalido" }, { status: 400 });
       }
+      corretor_id = corretor_id_payload;
     }
+
+  } else if (usuario.role === "captador") {
+    captador_id = String(usuario.id);
+    corretor_id = null; // captador nunca escolhe corretor manualmente — ignorar qualquer valor do payload
+
+  } else {
+    // admin
+    corretor_id = corretor_id_payload;
   }
 
-  // Cenário A requer equipe_id para validar que o corretor pertence à equipe
+  // Cenário A (corretor manual) requer equipe_id explícita para a RPC validar o vínculo
   if (corretor_id && !equipe_id) {
     return NextResponse.json(
       { erro: "equipe_obrigatorio_com_corretor" },
@@ -162,7 +178,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 5. Chamar RPC atômica (v2 suporta corretor_id opcional)
+  // 5. Chamar RPC atômica (v3: suporta captador_id, valida internamente)
   const { data, error: rpcError } = await admin.rpc(
     "criar_e_distribuir_lead",
     {
@@ -174,6 +190,7 @@ export async function POST(req: NextRequest) {
         origem,
         equipe_id:            equipe_id || null,
         corretor_id:          corretor_id || null,
+        captador_id:          captador_id || null,
         interesse:            interesse || null,
         faixa_valor:          faixa_valor || null,
         observacoes:          observacoes || null,
@@ -194,6 +211,9 @@ export async function POST(req: NextRequest) {
     }
     if (rpcError.message.includes("corretor_invalido_ou_fora_da_equipe")) {
       return NextResponse.json({ erro: "corretor_invalido" }, { status: 400 });
+    }
+    if (rpcError.message.includes("captador_invalido")) {
+      return NextResponse.json({ erro: "captador_invalido" }, { status: 400 });
     }
     console.error("[POST /api/leads] RPC error:", rpcError);
     return NextResponse.json(

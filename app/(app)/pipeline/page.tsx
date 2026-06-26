@@ -4,6 +4,7 @@ import { fetchTudoEscopado } from "@/lib/supabase-queries";
 import { PIPELINE_ORDER, STATUS_LABEL, LeadStatus } from "@/lib/types";
 import { StatusDropdown } from "@/components/pipeline/StatusDropdown";
 import { PipelineSlaBadge } from "@/components/pipeline/PipelineSlaBadge";
+import { StatusPill } from "@/components/ui/StatusPill";
 
 const COLUMN_ACCENT: Record<LeadStatus, string> = {
   novo: "#3B82F6",
@@ -84,15 +85,18 @@ export default async function PipelinePage() {
   }
 
   const isCorretor = usuario?.role === "corretor";
+  const isCaptador = usuario?.role === "captador";
   const leads = dados.pistas;
   const getCorretor = (id: string | null) =>
     id ? dados.corretores.find((c) => c.id === id) ?? null : null;
   const getEquipe = (id: string) => dados.equipes.find((e) => e.id === id);
 
-  const eyebrow = isCorretor ? "Meu pipeline" : "Acompanhamento";
+  const eyebrow = isCorretor ? "Meu pipeline" : isCaptador ? "Acompanhamento (leitura)" : "Acompanhamento";
   const descricao = isCorretor
     ? "Acompanhe o andamento das suas oportunidades e mova cada lead pelas etapas do funil."
-    : "Movimente cada lead pelas etapas até o fechamento. Cada coluna é um estágio do funil.";
+    : isCaptador
+      ? "Visualize o andamento dos leads que você captou. Alterações de status são feitas pelo corretor ou gestor."
+      : "Movimente cada lead pelas etapas até o fechamento. Cada coluna é um estágio do funil.";
 
   return (
     <>
@@ -153,7 +157,11 @@ export default async function PipelinePage() {
                         )}
                       </div>
                       <div className="mt-2.5 flex items-center justify-between gap-3">
-                        <StatusDropdown leadId={lead.id} statusAtual={lead.status} />
+                        {isCaptador ? (
+                          <StatusPill status={lead.status} />
+                        ) : (
+                          <StatusDropdown leadId={lead.id} statusAtual={lead.status} />
+                        )}
                         <div className="flex-shrink-0">
                           <PipelineSlaBadge lead={lead} />
                         </div>

@@ -82,11 +82,100 @@ export default async function LeadsPage() {
   }
 
   const isCorretor = usuario?.role === "corretor";
+  const isCaptador = usuario?.role === "captador";
   const leadsVisiveis = dados.pistas;
   const equipesVisiveis = dados.equipes;
   const corretoresParaModal = dados.corretores;
 
   const getEquipeInfo = (id: string) => dados.equipes.find((e) => e.id === id);
+
+  // Painel do captador: mostra apenas seus leads + botão de cadastrar
+  if (isCaptador) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Captação"
+          title="Meus Leads"
+          description="Leads captados por você. Acompanhe o status e o atendimento de cada oportunidade."
+          action={
+            <NovoLeadModal equipes={equipesVisiveis} corretores={[]} modoCaptador />
+          }
+        />
+
+        <Card>
+          <CardHeader
+            title="Leads captados"
+            subtitle={`${leadsVisiveis.length} ${leadsVisiveis.length === 1 ? "lead" : "leads"} no total`}
+          />
+          <div className="overflow-x-auto">
+            {leadsVisiveis.length === 0 ? (
+              <div className="px-5 py-12 text-center text-sm text-ink-faint">
+                <p>Nenhum lead cadastrado ainda.</p>
+                <p className="mt-1 text-xs text-warn">
+                  Se você já cadastrou leads, a migration 007 pode não ter sido aplicada.
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-base-border text-left text-xs uppercase tracking-wider text-ink-faint">
+                    <th className="px-5 py-3 font-medium">Lead</th>
+                    <th className="px-5 py-3 font-medium">Origem</th>
+                    <th className="hidden px-5 py-3 font-medium md:table-cell">Equipe</th>
+                    <th className="hidden px-5 py-3 font-medium md:table-cell">Corretor</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="hidden px-5 py-3 font-medium sm:table-cell">Entrada</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-base-border">
+                  {leadsVisiveis.map((lead) => {
+                    const equipe = equipesVisiveis.find((e) => e.id === lead.equipeId);
+                    const corretor = lead.corretorId
+                      ? dados.corretores.find((c) => c.id === lead.corretorId) ?? null
+                      : null;
+                    return (
+                      <tr key={lead.id} className="hover:bg-base-raised/40">
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar iniciais={lead.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")} cor={equipe?.cor} />
+                            <div>
+                              <div className="font-medium text-ink">{lead.nome}</div>
+                              <div className="text-xs text-ink-muted">{lead.telefone}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-ink-muted">{lead.origem}</td>
+                        <td className="hidden px-5 py-3 md:table-cell">
+                          <span className="inline-flex items-center gap-1.5 text-ink-muted">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: equipe?.cor }} />
+                            {equipe?.nome ?? "—"}
+                          </span>
+                        </td>
+                        <td className="hidden px-5 py-3 text-ink-muted md:table-cell">
+                          {lead.corretorId === null
+                            ? <span className="text-warn">Aguardando</span>
+                            : corretor
+                              ? corretor.nome
+                              : <span className="text-ink-faint">—</span>
+                          }
+                        </td>
+                        <td className="px-5 py-3">
+                          <StatusPill status={lead.status} />
+                        </td>
+                        <td className="hidden px-5 py-3 text-ink-faint sm:table-cell">
+                          {timeAgo(lead.criadoEm)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </Card>
+      </>
+    );
+  }
 
   // Painel do corretor: mostra apenas os próprios leads (sem fila, sem botão de cadastrar)
   if (isCorretor) {

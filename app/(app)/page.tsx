@@ -87,6 +87,7 @@ export default async function DashboardPage() {
   }
 
   const isCorretor = usuario?.role === "corretor";
+  const isCaptador = usuario?.role === "captador";
   const leads = dados.pistas;
   const getCorretor = (id: string | null) =>
     id ? dados.corretores.find((c) => c.id === id) ?? null : null;
@@ -99,6 +100,116 @@ export default async function DashboardPage() {
     .slice(0, 5);
 
   const maxFunil = Math.max(...PIPELINE_ORDER.map((s) => funil[s]), 1);
+
+  // Dashboard do captador
+  if (isCaptador) {
+    const leadsEmAtendimento = leads.filter(
+      (l) => l.status !== "fechado" && l.status !== "perdido"
+    ).length;
+    const leadsConvertidos = leads.filter((l) => l.status === "fechado").length;
+    const vgvCaptado = dados.vendas.reduce((s, v) => s + v.vgv, 0);
+    const taxaConversao = leads.length ? (leadsConvertidos / leads.length) * 100 : 0;
+    const recentes = [...leads]
+      .sort((a, b) => +new Date(b.criadoEm) - +new Date(a.criadoEm))
+      .slice(0, 5);
+
+    return (
+      <>
+        <PageHeader
+          eyebrow="Painel do captador"
+          title="Dashboard"
+          description={`Leads captados por você — ${usuario?.nome ?? "Captador"}.`}
+        />
+
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <KpiCard
+            label="Leads captados"
+            value={String(leads.length)}
+            hint="total no período"
+          />
+          <KpiCard
+            label="Em atendimento"
+            value={String(leadsEmAtendimento)}
+            hint="aguardando fechamento"
+          />
+          <KpiCard
+            label="Convertidos"
+            value={String(leadsConvertidos)}
+            hint="leads fechados"
+          />
+          <KpiCard
+            label="VGV gerado"
+            value={formatBRLCompact(vgvCaptado)}
+            hint={`${formatPercent(taxaConversao)} conversão`}
+            accent
+          />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <Card>
+            <CardHeader title="Meu funil" subtitle="Leads por etapa" />
+            <div className="space-y-3 px-5 py-5">
+              {PIPELINE_ORDER.map((status) => {
+                const contagem = leads.filter((l) => l.status === status).length;
+                const maxVal = Math.max(...PIPELINE_ORDER.map((s) => leads.filter((l) => l.status === s).length), 1);
+                return (
+                  <div key={status}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="text-ink-muted">{STATUS_LABEL[status]}</span>
+                      <span className="tnum font-medium text-ink">{contagem}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-base-raised">
+                      <div className="h-full rounded-full bg-action" style={{ width: `${(contagem / maxVal) * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="mt-4 flex items-center justify-between rounded-xl bg-loss/10 px-3 py-2 text-sm">
+                <span className="text-loss">Perdidos</span>
+                <span className="tnum font-medium text-loss">{leads.filter((l) => l.status === "perdido").length}</span>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Meus leads recentes" subtitle="Últimos leads que você cadastrou" />
+            <div className="divide-y divide-base-border">
+              {recentes.length === 0 && (
+                <div className="px-5 py-8 text-center text-sm text-ink-faint">
+                  Nenhum lead cadastrado ainda.{" "}
+                  {dados.pistas.length === 0 && (
+                    <span className="block mt-1 text-xs text-warn">
+                      Migration 007 pode não ter sido aplicada ainda.
+                    </span>
+                  )}
+                </div>
+              )}
+              {recentes.map((lead) => {
+                const corretor = getCorretor(lead.corretorId);
+                const equipe = getEquipe(lead.equipeId);
+                return (
+                  <div key={lead.id} className="flex items-center gap-4 px-5 py-3.5">
+                    <Avatar iniciais={lead.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")} cor={equipe?.cor} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-ink">{lead.nome}</div>
+                      <div className="truncate text-xs text-ink-muted">
+                        {corretor ? corretor.nome : <span className="text-warn">Aguardando</span>}
+                        {" · "}{equipe?.nome}
+                      </div>
+                    </div>
+                    <div className="hidden text-right text-xs text-ink-faint sm:block">
+                      {timeAgo(lead.criadoEm)}
+                    </div>
+                    <StatusPill status={lead.status} />
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+      </>
+    );
+  }
 
   // Dashboard individual do corretor
   if (isCorretor) {

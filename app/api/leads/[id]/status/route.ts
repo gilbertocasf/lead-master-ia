@@ -50,6 +50,18 @@ export async function PATCH(
     );
   }
 
+  // 2b. Deny-by-default: apenas admin, gestor e corretor podem alterar status.
+  //     Captador cadastra leads mas não opera o pipeline — bloqueado aqui,
+  //     antes de qualquer validação de payload ou chamada à RPC com service_role.
+  const ROLES_PERMITIDOS_STATUS = ["admin", "gestor", "corretor"] as const;
+  if (
+    !ROLES_PERMITIDOS_STATUS.includes(
+      usuario.role as (typeof ROLES_PERMITIDOS_STATUS)[number]
+    )
+  ) {
+    return NextResponse.json({ erro: "sem_permissao" }, { status: 403 });
+  }
+
   // 3. Validar payload
   let body: Record<string, unknown>;
   try {

@@ -3,7 +3,6 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Avatar } from "@/components/ui/Avatar";
 import { NovoLeadModal } from "@/components/NovoLeadModal";
-import { ComingSoonButton } from "@/components/ui/ComingSoonButton";
 import {
   fetchTudoEscopado,
   getProximoPlantao,
@@ -37,10 +36,7 @@ export default async function LeadsPage() {
           </svg>
           <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
           <p className="mt-1 text-xs text-ink-muted">
-            Seu usuário ainda não está vinculado a um cadastro de corretor.
-            Solicite ao administrador que preencha o campo{" "}
-            <span className="font-medium text-ink">usuario_id</span> na tabela{" "}
-            <span className="font-medium text-ink">corretores</span>.
+            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
           </p>
         </div>
       </>
@@ -71,10 +67,7 @@ export default async function LeadsPage() {
             Conta sem equipe vinculada
           </p>
           <p className="mt-1 text-xs text-ink-muted">
-            Sua conta de gestor ainda não foi associada a uma equipe.
-            Solicite ao administrador que preencha o campo{" "}
-            <span className="font-medium text-ink">equipe_id</span> na tabela{" "}
-            <span className="font-medium text-ink">usuarios</span>.
+            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
           </p>
         </div>
       </>
@@ -111,9 +104,6 @@ export default async function LeadsPage() {
             {leadsVisiveis.length === 0 ? (
               <div className="px-5 py-12 text-center text-sm text-ink-faint">
                 <p>Nenhum lead cadastrado ainda.</p>
-                <p className="mt-1 text-xs text-warn">
-                  Se você já cadastrou leads, a migration 007 pode não ter sido aplicada.
-                </p>
               </div>
             ) : (
               <table className="w-full text-sm">
@@ -319,9 +309,12 @@ export default async function LeadsPage() {
                     <div className="hidden text-right text-xs text-ink-faint sm:block">
                       {timeAgo(lead.criadoEm)}
                     </div>
-                    <ComingSoonButton className="rounded-lg bg-action px-3 py-1.5 text-xs font-medium text-white hover:bg-action/90">
-                      Distribuir
-                    </ComingSoonButton>
+                    <span
+                      className="whitespace-nowrap rounded-lg border border-base-border bg-base-raised px-3 py-1.5 text-xs font-medium text-ink-faint"
+                      title="A distribuição automática ocorre assim que houver corretor em plantão nesta equipe."
+                    >
+                      Aguardando plantão
+                    </span>
                   </div>
                 ))}
               </div>

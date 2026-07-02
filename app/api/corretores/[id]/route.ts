@@ -147,10 +147,13 @@ export async function PATCH(
   if ("equipe_id" in body) {
     const equipe_id = body.equipe_id;
     if (equipe_id !== null && equipe_id !== undefined) {
+      // A equipe precisa pertencer à mesma imobiliária do usuário autenticado —
+      // impede vincular corretor a equipe de outro tenant via chamada direta.
       const { data: equipeCheck } = await admin
         .from("equipes")
         .select("id")
         .eq("id", String(equipe_id))
+        .eq("imobiliaria_id", usuario.imobiliaria_id)
         .single();
       if (!equipeCheck) {
         return NextResponse.json({ erro: "equipe_invalida" }, { status: 400 });
@@ -182,10 +185,12 @@ export async function PATCH(
       }
 
       // Verificar que este usuário não está vinculado a outro corretor
+      // (filtrado também por imobiliaria_id — mesmo padrão de isolamento das demais queries)
       const { data: conflito } = await admin
         .from("corretores")
         .select("id")
         .eq("usuario_id", String(usuario_id))
+        .eq("imobiliaria_id", usuario.imobiliaria_id)
         .neq("id", corretor_id)
         .maybeSingle();
 
@@ -206,11 +211,12 @@ export async function PATCH(
     );
   }
 
-  // 6. Aplicar atualização
+  // 6. Aplicar atualização (defesa adicional: filtra também por imobiliaria_id)
   const { error: updateError } = await admin
     .from("corretores")
     .update(updates)
-    .eq("id", corretor_id);
+    .eq("id", corretor_id)
+    .eq("imobiliaria_id", usuario.imobiliaria_id);
 
   if (updateError) {
     console.error("[PATCH /api/corretores/[id]]", updateError.message);

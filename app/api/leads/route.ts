@@ -215,11 +215,12 @@ export async function POST(req: NextRequest) {
     if (rpcError.message.includes("captador_invalido")) {
       return NextResponse.json({ erro: "captador_invalido" }, { status: 400 });
     }
-    console.error("[POST /api/leads] RPC error:", rpcError);
-    return NextResponse.json(
-      { erro: "erro_interno", detalhe: rpcError.message, codigo: rpcError.code },
-      { status: 500 }
+    console.error(
+      "[POST /api/leads] RPC error:",
+      rpcError.message,
+      rpcError.code
     );
+    return NextResponse.json({ erro: "erro_interno" }, { status: 500 });
   }
 
   const result = data as RpcResult;

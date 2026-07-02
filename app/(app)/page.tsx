@@ -41,10 +41,7 @@ export default async function DashboardPage() {
             Usuário não vinculado
           </p>
           <p className="mt-1 text-xs text-ink-muted">
-            Seu usuário ainda não está vinculado a um cadastro de corretor.
-            Solicite ao administrador que preencha o campo{" "}
-            <span className="font-medium text-ink">usuario_id</span> na tabela{" "}
-            <span className="font-medium text-ink">corretores</span>.
+            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
           </p>
         </div>
       </>
@@ -76,10 +73,7 @@ export default async function DashboardPage() {
             Conta sem equipe vinculada
           </p>
           <p className="mt-1 text-xs text-ink-muted">
-            Sua conta de gestor ainda não foi associada a uma equipe. Solicite ao
-            administrador que preencha o campo{" "}
-            <span className="font-medium text-ink">equipe_id</span> na tabela{" "}
-            <span className="font-medium text-ink">usuarios</span>.
+            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
           </p>
         </div>
       </>
@@ -176,12 +170,7 @@ export default async function DashboardPage() {
             <div className="divide-y divide-base-border">
               {recentes.length === 0 && (
                 <div className="px-5 py-8 text-center text-sm text-ink-faint">
-                  Nenhum lead cadastrado ainda.{" "}
-                  {dados.pistas.length === 0 && (
-                    <span className="block mt-1 text-xs text-warn">
-                      Migration 007 pode não ter sido aplicada ainda.
-                    </span>
-                  )}
+                  Nenhum lead cadastrado ainda.
                 </div>
               )}
               {recentes.map((lead) => {

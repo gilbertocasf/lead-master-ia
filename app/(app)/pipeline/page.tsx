@@ -42,10 +42,7 @@ export default async function PipelinePage() {
           </svg>
           <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
           <p className="mt-1 text-xs text-ink-muted">
-            Seu usuário ainda não está vinculado a um cadastro de corretor.
-            Solicite ao administrador que preencha o campo{" "}
-            <span className="font-medium text-ink">usuario_id</span> na tabela{" "}
-            <span className="font-medium text-ink">corretores</span>.
+            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
           </p>
         </div>
       </>
@@ -74,10 +71,7 @@ export default async function PipelinePage() {
           </svg>
           <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
           <p className="mt-1 text-xs text-ink-muted">
-            Sua conta de gestor ainda não foi associada a uma equipe. Solicite ao
-            administrador que preencha o campo{" "}
-            <span className="font-medium text-ink">equipe_id</span> na tabela{" "}
-            <span className="font-medium text-ink">usuarios</span>.
+            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
           </p>
         </div>
       </>

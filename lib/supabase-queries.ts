@@ -87,7 +87,7 @@ export async function fetchUsuarioAtual(): Promise<UsuarioAtual | null> {
   return {
     id: String(data.id),
     imobiliariaId: String(data.imobiliaria_id),
-    role: data.role as "admin" | "gestor" | "corretor",
+    role: data.role as "admin" | "gestor" | "corretor" | "captador",
     nome: data.nome as string,
     equipeId: data.equipe_id ? String(data.equipe_id) : null,
   };

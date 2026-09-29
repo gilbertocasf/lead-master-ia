@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { isMockMode } from "@/lib/supabase";
 import { login } from "./actions";
+import PasswordInput from "./PasswordInput";
 
 export default async function LoginPage({
   searchParams,
@@ -71,15 +72,7 @@ export default async function LoginPage({
             >
               Senha
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              className="w-full rounded-xl border border-base-border bg-base-surface px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-action focus:outline-none focus:ring-1 focus:ring-action"
-            />
+            <PasswordInput />
           </div>
 
           <button

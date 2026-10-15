@@ -9,6 +9,7 @@ import {
 import { EditarVinculoCorretorModal } from "@/components/EditarVinculoCorretorModal";
 import { NovoCorretorModal } from "@/components/NovoCorretorModal";
 import { DesativarCorretorModal } from "@/components/DesativarCorretorModal";
+import { PlantaoToggle } from "@/components/PlantaoToggle";
 import { formatBRLCompact } from "@/lib/format";
 
 export default async function CorretoresPage() {
@@ -139,6 +140,15 @@ export default async function CorretoresPage() {
               <div className="mt-3 text-[11px] text-ink-faint">
                 Ordem de plantão: <span className="text-ink-muted">{c.ordemPlantao}º</span>
               </div>
+
+              {/* Plantão — admin e gestor (corretor/captador não chegam aqui) */}
+              {(usuario?.role === "admin" || usuario?.role === "gestor") && (
+                <PlantaoToggle
+                  corretorId={c.id}
+                  emPlantao={c.emPlantao}
+                  nome={c.nome}
+                />
+              )}
 
               {/* Botões administrativos — apenas para admin */}
               {isAdmin && (

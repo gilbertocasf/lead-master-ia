@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { DistribuirFilaButton } from "@/components/DistribuirFilaButton";
+import { AtribuirLeadModal } from "@/components/AtribuirLeadModal";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Avatar } from "@/components/ui/Avatar";
@@ -210,7 +213,12 @@ export default async function LeadsPage() {
                               cor={equipe?.cor}
                             />
                             <div>
-                              <div className="font-medium text-ink">{lead.nome}</div>
+                              <Link
+                                href={`/leads/${lead.id}`}
+                                className="font-medium text-ink hover:text-action hover:underline"
+                              >
+                                {lead.nome}
+                              </Link>
                               <div className="text-xs text-ink-muted">{lead.telefone}</div>
                             </div>
                           </div>
@@ -242,6 +250,17 @@ export default async function LeadsPage() {
   const getCorretorInfo = (id: string | null) =>
     id ? dados.corretores.find((c) => c.id === id) ?? null : null;
 
+  // Corretores ativos da equipe, para o modal de atribuição (em plantão primeiro)
+  const corretoresDaEquipe = (equipeId: string) =>
+    dados.corretores
+      .filter((c) => c.equipeId === equipeId && c.ativo)
+      .sort(
+        (a, b) =>
+          Number(b.emPlantao) - Number(a.emPlantao) ||
+          a.nome.localeCompare(b.nome, "pt-BR")
+      )
+      .map((c) => ({ id: c.id, nome: c.nome, emPlantao: c.emPlantao }));
+
   const naFila = leadsVisiveis.filter((l) => l.corretorId === null);
   const distribuidos = leadsVisiveis.filter((l) => l.corretorId !== null);
 
@@ -267,13 +286,16 @@ export default async function LeadsPage() {
                 title={`Fila — ${eq.nome}`}
                 subtitle={`${fila.length} ${fila.length === 1 ? "lead aguardando" : "leads aguardando"} distribuição`}
                 action={
-                  <span
-                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-                    style={{ backgroundColor: `${eq.cor}1A`, color: eq.cor }}
-                  >
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: eq.cor }} />
-                    {fila.length}
-                  </span>
+                  <div className="flex items-start gap-2">
+                    {fila.length > 0 && <DistribuirFilaButton equipeId={eq.id} />}
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                      style={{ backgroundColor: `${eq.cor}1A`, color: eq.cor }}
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: eq.cor }} />
+                      {fila.length}
+                    </span>
+                  </div>
                 }
               />
               {proximo && fila.length > 0 && (
@@ -301,7 +323,12 @@ export default async function LeadsPage() {
                       cor={eq.cor}
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-ink">{lead.nome}</div>
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="block truncate text-sm font-medium text-ink hover:text-action hover:underline"
+                      >
+                        {lead.nome}
+                      </Link>
                       <div className="truncate text-xs text-ink-muted">
                         {lead.interesse} • {lead.origem}
                       </div>
@@ -309,12 +336,14 @@ export default async function LeadsPage() {
                     <div className="hidden text-right text-xs text-ink-faint sm:block">
                       {timeAgo(lead.criadoEm)}
                     </div>
-                    <span
-                      className="whitespace-nowrap rounded-lg border border-base-border bg-base-raised px-3 py-1.5 text-xs font-medium text-ink-faint"
-                      title="A distribuição automática ocorre assim que houver corretor em plantão nesta equipe."
-                    >
-                      Aguardando plantão
+                    <span className="whitespace-nowrap rounded-full bg-warn/15 px-2.5 py-1 text-[11px] font-medium text-warn">
+                      Na fila
                     </span>
+                    <AtribuirLeadModal
+                      leadId={lead.id}
+                      leadNome={lead.nome}
+                      corretores={corretoresDaEquipe(eq.id)}
+                    />
                   </div>
                 ))}
               </div>
@@ -348,7 +377,12 @@ export default async function LeadsPage() {
                 return (
                   <tr key={lead.id} className="hover:bg-base-raised/40">
                     <td className="px-5 py-3">
-                      <div className="font-medium text-ink">{lead.nome}</div>
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="font-medium text-ink hover:text-action hover:underline"
+                      >
+                        {lead.nome}
+                      </Link>
                       <div className="text-xs text-ink-muted">{lead.telefone}</div>
                     </td>
                     <td className="px-5 py-3 text-ink-muted">{lead.origem}</td>

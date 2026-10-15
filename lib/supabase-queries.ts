@@ -150,6 +150,9 @@ export async function fetchCorretores(): Promise<Corretor[]> {
     ativo: Boolean(row.ativo),
     avatarIniciais: iniciais(row.nome ?? "?"),
     usuarioId: row.usuario_id ? String(row.usuario_id) : null,
+    ultimoLeadRecebidoEm: row.ultimo_lead_recebido_em
+      ? String(row.ultimo_lead_recebido_em)
+      : null,
   }));
 }
 
@@ -266,7 +269,7 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
     // Corretores via admin (captador ainda não tem policy RLS para corretores)
     const { data: corretoresData } = await admin
       .from("corretores")
-      .select("id, nome, equipe_id, ordem_plantao, ativo, em_plantao, usuario_id")
+      .select("id, nome, equipe_id, ordem_plantao, ativo, em_plantao, ultimo_lead_recebido_em, usuario_id")
       .eq("imobiliaria_id", usuario.imobiliariaId)
       .eq("ativo", true)
       .order("ordem_plantao", { ascending: true });
@@ -280,6 +283,9 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
       ativo: Boolean(row.ativo),
       avatarIniciais: iniciais(row.nome ?? "?"),
       usuarioId: row.usuario_id ? String(row.usuario_id) : null,
+      ultimoLeadRecebidoEm: row.ultimo_lead_recebido_em
+        ? String(row.ultimo_lead_recebido_em)
+        : null,
     }));
 
     // Leads do captador via anon client (RLS filtra por captador_id = current_usuario_id após migration 007)
@@ -514,8 +520,18 @@ export function getProximoPlantao(
   dados: DadosLeadMaster,
   equipeId: string
 ): Corretor | null {
+  // Mesma regra da distribuição no banco: quem recebeu lead há mais tempo
+  // (ou nunca recebeu) vem primeiro; empate resolvido por ordem de plantão.
+  const instante = (c: Corretor): number => {
+    if (!c.ultimoLeadRecebidoEm) return 0;
+    const t = Date.parse(c.ultimoLeadRecebidoEm);
+    return Number.isNaN(t) ? 0 : t;
+  };
   const fila = dados.corretores
     .filter((c) => c.equipeId === equipeId && c.emPlantao && c.ativo)
-    .sort((a, b) => a.ordemPlantao - b.ordemPlantao);
+    .sort(
+      (a, b) =>
+        instante(a) - instante(b) || a.ordemPlantao - b.ordemPlantao
+    );
   return fila[0] ?? null;
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { fetchTudoEscopado } from "@/lib/supabase-queries";
@@ -127,7 +128,9 @@ export default async function PipelinePage() {
                       className="rounded-xl border border-base-border bg-base-surface p-3 shadow-card transition-colors hover:border-base-raised"
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
-                        <span className="text-sm font-medium text-ink">{lead.nome}</span>
+                        <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-ink hover:text-action hover:underline">
+                          {lead.nome}
+                        </Link>
                         <span
                           className="h-2 w-2 shrink-0 rounded-full"
                           style={{ backgroundColor: equipe?.cor }}

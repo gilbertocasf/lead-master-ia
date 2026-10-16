@@ -48,7 +48,7 @@ ou mais, só letras e números). Duas formas:
 Guarde os dois: o `META_VERIFY_TOKEN` será digitado também no painel da Meta.
 
 Sem `META_APP_SECRET` o webhook responde 503 de propósito (nunca aceita avisos sem assinatura).
-A rotina de cron também responde 503 sem `CRON_SECRET`, embora a tela `/integracoes` o liste como opcional.
+A rotina de cron também responde 503 sem `CRON_SECRET`; por isso a tela `/integracoes` o lista como obrigatório.
 
 ---
 
@@ -133,6 +133,14 @@ curl "https://graph.facebook.com/v25.0/<PAGE_ID>/subscribed_apps?access_token=<T
 
 Sem este cadastro o sistema não sabe de qual imobiliária é o lead nem para qual equipe mandá-lo.
 
+**Quem cadastra a Página:** o primeiro cadastro de uma Página nova (um `page_id` que ainda não está
+ligado a nenhuma imobiliária) é feito **pelo operador do Lead Master**, logado com um e-mail que esteja
+em `INTERNAL_OWNER_EMAILS` na Vercel, dentro da conta da imobiliária. Isso impede que alguém vincule à
+própria conta a Página de outra empresa. Se o admin da imobiliária tentar cadastrar uma Página ainda não
+liberada, recebe a mensagem "Esta Página ainda não foi liberada para a sua imobiliária". Depois que a
+Página está liberada, o próprio admin da imobiliária pode criar e alterar os vínculos de formulário
+dessa Página. Uma Página já ligada a outra imobiliária nunca pode ser cadastrada (nem pelo operador).
+
 **Como descobrir o ID da Página (`page_id`):** na Página do Facebook, em Sobre/Transparência da Página
 (o número aparece ali), ou na resposta de `GET /me/accounts` do passo 6.
 
@@ -157,7 +165,10 @@ Regra de escolha da equipe: vínculo do formulário > regra padrão da Página >
 
 A rotina `GET /api/cron/meta` (a) tenta de novo eventos com erro, (b) distribui filas paradas e
 (c) busca os leads das últimas 3 horas de cada formulário cadastrado, para recuperar avisos perdidos.
-Rode a cada 5 minutos. Escolha **uma** das opções.
+Rode a cada 5 minutos (recomendado). **No mínimo, o agendador precisa rodar a cada 1 a 2 horas:** a
+reconciliação olha só as últimas 3 horas, então um intervalo maior deixa leads com aviso perdido fora da
+busca (e eles não são recuperados depois). Por isso o cron diário do plano Hobby **não basta** sozinho.
+Escolha **uma** das opções.
 
 ### Opção A: Vercel Cron (plano Pro)
 
@@ -180,7 +191,7 @@ Só adicione o arquivo se o projeto estiver no plano Pro.
 ### Opção B: agendador externo (qualquer plano)
 
 Use um serviço de agendamento (por exemplo cron-job.org, GitHub Actions agendado ou o cron de um servidor seu)
-para chamar a cada 5 minutos:
+para chamar a cada 5 minutos (nunca com intervalo maior que 1 a 2 horas):
 
 ```bash
 curl -fsS -H "Authorization: Bearer <CRON_SECRET>" https://<seu-dominio>/api/cron/meta

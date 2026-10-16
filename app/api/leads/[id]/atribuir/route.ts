@@ -6,6 +6,8 @@ import { isMockMode } from "@/lib/supabase";
 import { funcaoAusente, RESPOSTA_MIGRATION_PENDENTE } from "@/lib/rpc";
 import { notificarCorretorNovoLead, type EmailStatus } from "@/lib/email";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface RpcAtribuir {
   status: string;
   tipo?: "distribuido" | "redistribuido";
@@ -46,10 +48,15 @@ export async function POST(
   if (usuario.role === "gestor" && !usuario.equipe_id) {
     return NextResponse.json({ erro: "gestor_sem_equipe" }, { status: 403 });
   }
+  if (!UUID_RE.test(params.id)) {
+    return NextResponse.json({ erro: "lead_nao_encontrado" }, { status: 404 });
+  }
 
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const json: unknown = await req.json();
+    if (typeof json !== "object" || json === null || Array.isArray(json)) throw new Error();
+    body = json as Record<string, unknown>;
   } catch {
     return NextResponse.json({ erro: "payload_invalido" }, { status: 400 });
   }
@@ -57,6 +64,9 @@ export async function POST(
     typeof body.corretor_id === "string" ? body.corretor_id.trim() : "";
   if (!corretor_id) {
     return NextResponse.json({ erro: "corretor_obrigatorio" }, { status: 400 });
+  }
+  if (!UUID_RE.test(corretor_id)) {
+    return NextResponse.json({ erro: "corretor_invalido" }, { status: 400 });
   }
 
   const lead_id = params.id;

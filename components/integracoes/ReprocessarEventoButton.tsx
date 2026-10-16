@@ -22,6 +22,16 @@ export function ReprocessarEventoButton({ id }: { id: string }) {
         );
         return;
       }
+      // 200 não garante sucesso: o processamento pode ter falhado de novo.
+      const resultado = data?.resultado;
+      if (resultado?.status === "erro") {
+        const codigo = typeof resultado.erro === "string" ? resultado.erro : "erro_desconhecido";
+        setErro(
+          resultado.retentar
+            ? `Falhou de novo (${codigo}). Uma nova tentativa automática foi agendada.`
+            : `Falhou de novo (${codigo}). Corrija a causa antes de reprocessar.`
+        );
+      }
       router.refresh();
     } catch {
       setErro("Erro de conexão.");

@@ -4,11 +4,15 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { isMockMode } from "@/lib/supabase";
 import { funcaoAusente } from "@/lib/rpc";
+import { corretoresDasAtribuicoes, notificarAtribuicoes } from "@/lib/notificacoes";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface RpcFila {
   status?: string;
   distribuidos?: number;
   restantes?: number;
+  atribuicoes?: unknown;
 }
 
 interface RpcPlantao {
@@ -65,11 +69,16 @@ export async function PATCH(
   if (usuario.role === "gestor" && !usuario.equipe_id) {
     return NextResponse.json({ erro: "gestor_sem_equipe" }, { status: 403 });
   }
+  if (!UUID_RE.test(params.id)) {
+    return NextResponse.json({ erro: "corretor_nao_encontrado" }, { status: 404 });
+  }
 
   // 4. Payload
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const json: unknown = await req.json();
+    if (typeof json !== "object" || json === null || Array.isArray(json)) throw new Error();
+    body = json as Record<string, unknown>;
   } catch {
     return NextResponse.json({ erro: "payload_invalido" }, { status: 400 });
   }
@@ -162,13 +171,29 @@ export async function PATCH(
 
   revalidar();
 
-  const fila =
-    result.fila && typeof result.fila === "object"
-      ? {
-          distribuidos: Number(result.fila.distribuidos ?? 0),
-          restantes: Number(result.fila.restantes ?? 0),
-        }
-      : null;
+  const filaRpc = result.fila && typeof result.fila === "object" ? result.fila : null;
+  const corretoresAvisar = corretoresDasAtribuicoes(filaRpc?.atribuicoes);
+
+  // Leads da fila distribuídos ao ligar o plantão: avisa os corretores.
+  // Falha de e-mail nunca derruba a resposta (notificarAtribuicoes não lança).
+  if (corretoresAvisar.length > 0) {
+    try {
+      await notificarAtribuicoes(admin, String(usuario.imobiliaria_id), corretoresAvisar);
+    } catch (err) {
+      console.error(
+        "[PATCH /api/corretores/[id]/plantao] notificação:",
+        err instanceof Error ? err.message : "erro"
+      );
+    }
+  }
+
+  const fila = filaRpc
+    ? {
+        distribuidos: Number(filaRpc.distribuidos ?? 0),
+        restantes: Number(filaRpc.restantes ?? 0),
+        atribuicoes: corretoresAvisar.length,
+      }
+    : null;
 
   return NextResponse.json(
     { status: "ok", em_plantao: result.em_plantao ?? em_plantao, fila },

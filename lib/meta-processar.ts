@@ -17,8 +17,11 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { funcaoAusente } from "@/lib/rpc";
 import { normalizarTelefone, telefoneValido } from "@/lib/telefone";
-import { notificarCorretorNovoLead } from "@/lib/email";
+import { notificarAtribuicoes, notificarCorretor } from "@/lib/notificacoes";
 import { enviarAlerta } from "@/lib/alertas";
+
+// Reexportado para quem já importava daqui (cron).
+export { notificarAtribuicoes };
 import {
   MetaApiErro,
   buscarLead,
@@ -351,38 +354,6 @@ async function finalizarComSucesso(
       .eq("imobiliaria_id", campos.imobiliaria_id);
   }
   return true;
-}
-
-async function notificarCorretor(
-  admin: AdminClient,
-  corretorId: string,
-  imobiliariaId: string
-): Promise<void> {
-  try {
-    const { data } = await admin
-      .from("corretores")
-      .select("email")
-      .eq("id", corretorId)
-      .eq("imobiliaria_id", imobiliariaId)
-      .maybeSingle();
-    const email = typeof data?.email === "string" ? data.email.trim() : "";
-    if (email && email.includes("@")) {
-      await notificarCorretorNovoLead(email);
-    }
-  } catch (err) {
-    console.error("[meta] notificação do corretor falhou:", textoErro(err));
-  }
-}
-
-/** Notifica os corretores de uma lista de atribuições (usado pelo cron). */
-export async function notificarAtribuicoes(
-  admin: AdminClient,
-  imobiliariaId: string,
-  corretorIds: string[]
-): Promise<void> {
-  for (const id of corretorIds) {
-    await notificarCorretor(admin, id, imobiliariaId);
-  }
 }
 
 function alertaGraph(err: MetaApiErro, ev: EventoRow): Falha["alerta"] {

@@ -71,20 +71,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ erro: "payload_muito_grande" }, { status: 413 });
   }
 
-  let corpo: string;
+  // A assinatura é calculada sobre os bytes exatos enviados pela Meta: ler o
+  // corpo bruto, validar e só então decodificar como UTF-8.
+  let bruto: ReturnType<typeof Buffer.from>;
   try {
-    corpo = await req.text();
+    bruto = Buffer.from(await req.arrayBuffer());
   } catch {
     return NextResponse.json({ erro: "payload_invalido" }, { status: 400 });
   }
-  if (corpo.length > TAMANHO_MAXIMO_CORPO) {
+  if (bruto.length > TAMANHO_MAXIMO_CORPO) {
     return NextResponse.json({ erro: "payload_muito_grande" }, { status: 413 });
   }
 
-  if (!validarAssinatura(corpo, req.headers.get("x-hub-signature-256"), config.appSecret)) {
+  if (!validarAssinatura(bruto, req.headers.get("x-hub-signature-256"), config.appSecret)) {
     console.warn("[webhook meta] assinatura inválida — aviso recusado.");
     return NextResponse.json({ erro: "assinatura_invalida" }, { status: 401 });
   }
+
+  const corpo = bruto.toString("utf8");
 
   let payload: unknown;
   try {

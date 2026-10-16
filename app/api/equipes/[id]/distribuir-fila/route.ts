@@ -4,11 +4,15 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { isMockMode } from "@/lib/supabase";
 import { funcaoAusente, RESPOSTA_MIGRATION_PENDENTE } from "@/lib/rpc";
+import { corretoresDasAtribuicoes, notificarAtribuicoes } from "@/lib/notificacoes";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface RpcDistribuirFila {
   status: string;
   distribuidos?: number;
   restantes?: number;
+  atribuicoes?: unknown;
 }
 
 export async function POST(
@@ -43,6 +47,9 @@ export async function POST(
   }
 
   const equipe_id = params.id;
+  if (!UUID_RE.test(equipe_id)) {
+    return NextResponse.json({ erro: "equipe_nao_encontrada" }, { status: 404 });
+  }
 
   if (usuario.role === "gestor") {
     if (!usuario.equipe_id) {
@@ -102,6 +109,20 @@ export async function POST(
     return NextResponse.json({ erro: "erro_interno" }, { status: 500 });
   }
 
+  // Avisa por e-mail os corretores que receberam leads da fila.
+  // Falha de e-mail nunca derruba a resposta.
+  const corretoresAvisar = corretoresDasAtribuicoes(result.atribuicoes);
+  if (corretoresAvisar.length > 0) {
+    try {
+      await notificarAtribuicoes(admin, String(usuario.imobiliaria_id), corretoresAvisar);
+    } catch (err) {
+      console.error(
+        "[POST /api/equipes/[id]/distribuir-fila] notificação:",
+        err instanceof Error ? err.message : "erro"
+      );
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/leads");
   revalidatePath("/pipeline");
@@ -113,6 +134,7 @@ export async function POST(
       status: "ok",
       distribuidos: Number(result.distribuidos ?? 0),
       restantes: Number(result.restantes ?? 0),
+      atribuicoes: corretoresAvisar.length,
     },
     { status: 200 }
   );

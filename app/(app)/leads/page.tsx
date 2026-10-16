@@ -261,7 +261,11 @@ export default async function LeadsPage() {
       )
       .map((c) => ({ id: c.id, nome: c.nome, emPlantao: c.emPlantao }));
 
-  const naFila = leadsVisiveis.filter((l) => l.corretorId === null);
+  // Mesma regra de distribuir_fila_equipe: sem corretor e ainda em aberto.
+  // Só esses leads aparecem na fila e podem ser atribuídos manualmente.
+  const estaNaFila = (l: (typeof leadsVisiveis)[number]) =>
+    l.corretorId === null && l.status !== "fechado" && l.status !== "perdido";
+  const naFila = leadsVisiveis.filter(estaNaFila);
   const distribuidos = leadsVisiveis.filter((l) => l.corretorId !== null);
 
   return (
@@ -393,9 +397,9 @@ export default async function LeadsPage() {
                       </span>
                     </td>
                     <td className="hidden px-5 py-3 text-ink-muted md:table-cell">
-                      {lead.corretorId === null
+                      {estaNaFila(lead)
                         ? <span className="text-warn">Na fila</span>
-                        : corretor
+                        : lead.corretorId !== null && corretor
                           ? corretor.nome
                           : <span className="text-ink-faint">—</span>
                       }

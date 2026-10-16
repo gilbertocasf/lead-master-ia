@@ -4,11 +4,15 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { isMockMode } from "@/lib/supabase";
 import { funcaoAusente, RESPOSTA_MIGRATION_PENDENTE } from "@/lib/rpc";
+import { ehOperadorInterno } from "@/lib/operador-interno";
 
 // Cria ou atualiza o vínculo Página/formulário da Meta → equipe.
 // Corpo: { page_id, page_nome?, form_id? | null, form_nome?, equipe_id }
 // form_id null/ausente = regra padrão da Página.
-// Também cadastra (ou atualiza) a Página em integracoes_meta.
+// Também atualiza a Página em integracoes_meta. Cadastrar uma Página nova
+// (page_id ainda inexistente) é exclusivo de operadores internos
+// (INTERNAL_OWNER_EMAILS): o admin do cliente só vincula Páginas já
+// liberadas para a imobiliária dele — impede tomar a Página de terceiros.
 
 export const dynamic = "force-dynamic";
 
@@ -124,6 +128,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ erro: "pagina_de_outra_imobiliaria" }, { status: 409 });
   }
 
+  if (!paginaExistente && !ehOperadorInterno(user.email)) {
+    return NextResponse.json(
+      {
+        erro: "pagina_nao_liberada",
+        detalhe:
+          "Esta Página ainda não foi liberada para a sua imobiliária. Fale com o suporte do Lead Master.",
+      },
+      { status: 403 }
+    );
+  }
+
   let paginaNova = false;
   if (paginaExistente) {
     const atualizacao: Record<string, unknown> = { ativo: true };
@@ -222,11 +237,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Página recém-cadastrada: eventos que chegaram antes do cadastro (sem
-  // imobiliária) passam a pertencer a esta imobiliária e voltam para a fila.
+  // imobiliária) passam a pertencer a esta imobiliária e voltam para a fila
+  // como "recebido", prontos para o próximo processamento.
   if (paginaNova) {
     const { error } = await admin
       .from("meta_eventos")
-      .update({ imobiliaria_id: imobId, proxima_tentativa_em: null })
+      .update({ imobiliaria_id: imobId, status: "recebido", proxima_tentativa_em: null })
       .eq("page_id", pageId)
       .is("imobiliaria_id", null)
       .in("status", ["recebido", "erro"]);

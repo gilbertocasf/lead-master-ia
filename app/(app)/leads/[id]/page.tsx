@@ -5,6 +5,7 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { isMockMode } from "@/lib/supabase";
+import { fetchUsuarioAtual } from "@/lib/supabase-queries";
 import { STATUS_LABEL, type LeadStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -112,6 +113,15 @@ export default async function LeadDetalhePage({ params }: { params: { id: string
     .maybeSingle();
 
   if (!lead) notFound();
+
+  // Gestor só vê leads da própria equipe (mesmo antes da migration 009 na RLS).
+  const usuario = await fetchUsuarioAtual();
+  if (
+    usuario?.role === "gestor" &&
+    (!usuario.equipeId || String(lead.equipe_id ?? "") !== usuario.equipeId)
+  ) {
+    notFound();
+  }
 
   // Consulta 2: colunas da Meta (podem não existir antes da migration 010)
   let meta: Dados | null = null;

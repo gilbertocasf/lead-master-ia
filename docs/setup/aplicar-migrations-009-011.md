@@ -157,6 +157,12 @@ Esperado: **5 linhas**, todas com `visitante = false`, `usuario_logado = false`,
 `has_function_privilege('anon','alterar_status_lead(jsonb)','execute')` precisa ser `false`.
 Se alguma aparecer `true`, avise o responsável técnico.
 
+**Recomendação: aplique a 009 o quanto antes**, mesmo que a 010 e a 011 ainda esperem. Ela é
+compatível com o código atual de `main` (o app em produção continua funcionando igual) e fecha
+a chamada direta das funções de escrita (`alterar_status_lead`, `criar_e_distribuir_lead`)
+pela chave pública do Supabase (que fica visível no navegador). Sem a 009, essas funções ainda
+podem ser chamadas diretamente com essa chave, sem passar pelas regras do app.
+
 ### 4.3 Policies (regras de acesso)
 
 ```sql
@@ -255,6 +261,27 @@ Ele deve ser criado e distribuído como antes. Tente cadastrar de novo com o mes
 o app deve avisar que o lead já existe. Entre como gestor e confirme que aparecem apenas os
 leads e corretores da equipe dele.
 
+### 4.8 Antes de ligar plantão ou o cron
+
+Leads que entraram sem corretor (por exemplo, quando ninguém estava de plantão) ficam parados
+na fila da equipe. Depois da 011, **ligar o plantão de um corretor**, clicar em
+**"Distribuir fila"** ou **a primeira execução do cron** (`/api/cron/meta`) distribui esses
+leads de uma vez, e **cada corretor que receber um lead é avisado por e-mail**. Antes de ligar,
+confira quantos são e desde quando estão parados:
+
+```sql
+SELECT e.nome, l.status, count(*), min(l.created_at), max(l.created_at)
+FROM leads l
+JOIN equipes e ON e.id = l.equipe_id
+WHERE l.corretor_id IS NULL
+  AND l.status NOT IN ('fechado','perdido')
+GROUP BY 1,2;
+```
+
+Leads `fechado` ou `perdido` nunca entram na fila. Se a lista tiver leads antigos que não
+devem mais ser atendidos, marque-os como `perdido` pelo app antes de ligar o plantão ou o
+cron; se estiver tudo certo, avise os corretores de que vão receber esses leads e os e-mails.
+
 ---
 
 ## 5. Como reverter
@@ -299,6 +326,10 @@ respondem "migration pendente" enquanto essas funções não existirem.
 
 **Passo A — voltar o telefone de comparação ao formato antigo** (faça somente se voltou a
 `criar_e_distribuir_lead` para a versão 3 no passo 5.1-B):
+
+> **Atenção:** só faça se o app em produção também voltou para a versão 633c230. O app atual
+> compara telefones no formato novo (com o "55"); com o banco no formato antigo, a detecção de
+> lead repetido falha.
 
 ```sql
 BEGIN;

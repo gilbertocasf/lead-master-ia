@@ -10,6 +10,25 @@ interface EquipeOpcao {
 
 const VAZIO = { page_id: "", page_nome: "", form_id: "", form_nome: "", equipe_id: "" };
 
+// Mensagens por código de erro de POST /api/integracoes/meta/roteamentos.
+const MENSAGENS_ERRO: Record<string, string> = {
+  pagina_nao_liberada:
+    "Esta Página ainda não foi liberada para a sua imobiliária. Fale com o suporte do Lead Master.",
+  pagina_de_outra_imobiliaria:
+    "Esta Página já está vinculada a outra imobiliária. Confira o ID ou fale com o suporte do Lead Master.",
+  equipe_invalida: "Equipe inválida ou inativa. Escolha uma equipe ativa.",
+  page_id_invalido: "ID da Página inválido: use apenas números.",
+  form_id_invalido: "ID do formulário inválido: use apenas números ou deixe em branco.",
+  conflito_concorrente: "Este vínculo acabou de ser salvo em outra sessão. Atualize a página e confira.",
+  migration_pendente: "Integração em configuração pela equipe Lead Master.",
+  sem_permissao: "Somente o administrador da imobiliária pode criar vínculos.",
+  usuario_sem_imobiliaria: "Seu usuário não está ligado a uma imobiliária.",
+  nao_autenticado: "Sua sessão expirou. Entre novamente.",
+  payload_invalido: "Dados inválidos. Revise os campos e tente de novo.",
+  servico_indisponivel: "Serviço temporariamente indisponível. Tente novamente em instantes.",
+  supabase_nao_configurado: "Serviço temporariamente indisponível. Tente novamente em instantes.",
+};
+
 const inputCls =
   "w-full rounded-xl border border-base-border bg-base-raised px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-action focus:outline-none disabled:opacity-60";
 
@@ -61,10 +80,11 @@ export function NovoRoteamentoForm({ equipes }: { equipes: EquipeOpcao[] }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        const codigo = typeof data.erro === "string" ? data.erro : "";
         setErro(
-          data.erro === "migration_pendente"
-            ? "Integração ainda não instalada no banco: aplique as migrations 009 a 011."
-            : data.detalhe ?? "Não foi possível salvar o vínculo. Tente novamente."
+          MENSAGENS_ERRO[codigo] ??
+            (typeof data.detalhe === "string" ? data.detalhe : null) ??
+            "Não foi possível salvar o vínculo. Tente novamente."
         );
         return;
       }

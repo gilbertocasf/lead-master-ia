@@ -54,7 +54,7 @@ export function obterConfigMeta(): ConfigMeta {
  * bruto, usando o App Secret como chave). Comparação em tempo constante.
  */
 export function validarAssinatura(
-  corpoBruto: string,
+  corpoBruto: Uint8Array | string, // Buffer com os bytes brutos (ou texto UTF-8)
   header: string | null | undefined,
   appSecret: string | null | undefined
 ): boolean {
@@ -63,7 +63,7 @@ export function validarAssinatura(
   if (!m) return false;
   const recebido = Buffer.from(m[1], "hex");
   const esperado = createHmac("sha256", appSecret)
-    .update(corpoBruto, "utf8")
+    .update(typeof corpoBruto === "string" ? Buffer.from(corpoBruto, "utf8") : corpoBruto)
     .digest();
   if (recebido.length !== esperado.length || esperado.length !== 32) {
     return false;

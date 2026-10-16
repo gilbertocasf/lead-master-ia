@@ -37,16 +37,24 @@ export async function notificarCorretorNovoLead(
     });
 
     if (!res.ok) {
+      // Nunca registrar o endereço do corretor: o corpo da resposta pode
+      // repeti-lo, então e-mails são mascarados e o texto é truncado.
       const corpo = await res.text().catch(() => "(sem corpo)");
+      const corpoSeguro = corpo
+        .replace(/[^\s"'<>@]+@[^\s"'<>@]+/g, "[email]")
+        .slice(0, 300);
       console.error(
-        `[email] Falha ao notificar ${email}: HTTP ${res.status} — ${corpo}`
+        `[email] Falha ao notificar corretor: HTTP ${res.status} — ${corpoSeguro}`
       );
       return "falhou";
     }
 
     return "enviado";
   } catch (err) {
-    console.error(`[email] Erro de rede ao notificar ${email}:`, err);
+    console.error(
+      "[email] Erro de rede ao notificar corretor:",
+      err instanceof Error ? err.message.slice(0, 200) : "erro desconhecido"
+    );
     return "falhou";
   }
 }

@@ -41,9 +41,13 @@ export function DistribuirFilaButton({ equipeId }: Props) {
 
       const d = Number(data.distribuidos ?? 0);
       const r = Number(data.restantes ?? 0);
-      setResultado(
-        `${d} ${d === 1 ? "distribuído" : "distribuídos"}, ${r} aguardando`
-      );
+      if (d === 0 && r > 0) {
+        setErro("Nenhum corretor em plantão nesta equipe.");
+      } else {
+        setResultado(
+          `${d} ${d === 1 ? "distribuído" : "distribuídos"}, ${r} aguardando`
+        );
+      }
       router.refresh();
     } catch {
       setErro(MENSAGENS.erro_rede);

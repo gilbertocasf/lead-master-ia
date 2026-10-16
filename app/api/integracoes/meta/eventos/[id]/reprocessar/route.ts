@@ -86,9 +86,10 @@ export async function POST(
     );
   }
 
+  // Volta o evento para "recebido" e sem espera, para ser reivindicado agora.
   const { error: erroReset } = await admin
     .from("meta_eventos")
-    .update({ proxima_tentativa_em: null })
+    .update({ status: "recebido", proxima_tentativa_em: null })
     .eq("id", id)
     .eq("imobiliaria_id", usuario.imobiliaria_id)
     .in("status", ["recebido", "erro"]);

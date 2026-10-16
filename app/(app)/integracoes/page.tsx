@@ -8,6 +8,9 @@ import { RemoverRoteamentoButton } from "@/components/integracoes/RemoverRoteame
 import { ReprocessarEventoButton } from "@/components/integracoes/ReprocessarEventoButton";
 import { fetchUsuarioAtual } from "@/lib/supabase-queries";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { createSupabaseServer } from "@/lib/supabase-server";
+import { isMockMode } from "@/lib/supabase";
+import { ehOperadorInterno } from "@/lib/operador-interno";
 import { funcaoAusente } from "@/lib/rpc";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +46,7 @@ const VARIAVEIS: { nome: string; uso: string; obrigatoria: boolean }[] = [
   { nome: "META_APP_SECRET", uso: "Valida a assinatura dos avisos da Meta", obrigatoria: true },
   { nome: "META_VERIFY_TOKEN", uso: "Verificação do webhook no painel da Meta", obrigatoria: true },
   { nome: "META_ACCESS_TOKEN", uso: "Leitura dos dados do lead na Meta", obrigatoria: true },
-  { nome: "CRON_SECRET", uso: "Protege a rotina de reprocessamento", obrigatoria: false },
+  { nome: "CRON_SECRET", uso: "Protege a rotina de reprocessamento e reconciliação", obrigatoria: true },
   { nome: "ALERTA_EMAILS", uso: "Destinatários dos alertas de falha", obrigatoria: false },
 ];
 
@@ -89,6 +92,21 @@ function Aviso({ titulo, texto, tom }: { titulo: string; texto: string; tom: "wa
   );
 }
 
+const EM_CONFIGURACAO = "Integração em configuração pela equipe Lead Master.";
+
+/** Operador interno do Lead Master (INTERNAL_OWNER_EMAILS) logado nesta sessão. */
+async function sessaoDeOperadorInterno(): Promise<boolean> {
+  if (isMockMode) return false;
+  try {
+    const {
+      data: { user },
+    } = await createSupabaseServer().auth.getUser();
+    return ehOperadorInterno(user?.email);
+  } catch {
+    return false;
+  }
+}
+
 export default async function IntegracoesPage() {
   const usuario = await fetchUsuarioAtual();
 
@@ -107,6 +125,9 @@ export default async function IntegracoesPage() {
       </>
     );
   }
+
+  // Detalhes técnicos (variáveis, migrations, Vercel) só para a equipe Lead Master.
+  const operador = await sessaoDeOperadorInterno();
 
   const cabecalho = (
     <PageHeader
@@ -135,7 +156,11 @@ export default async function IntegracoesPage() {
         <Aviso
           tom="loss"
           titulo="Serviço indisponível"
-          texto="A chave de serviço do Supabase não está configurada no servidor."
+          texto={
+            operador
+              ? "A chave de serviço do Supabase não está configurada no servidor."
+              : "Tente novamente em instantes. Se persistir, fale com o suporte do Lead Master."
+          }
         />
       </>
     );
@@ -164,11 +189,19 @@ export default async function IntegracoesPage() {
     return (
       <>
         {cabecalho}
-        <Aviso
-          tom="warn"
-          titulo="Integração ainda não instalada no banco: aplique as migrations 009 a 011"
-          texto="Depois de aplicar, recarregue esta página. O restante do sistema continua funcionando normalmente."
-        />
+        {operador ? (
+          <Aviso
+            tom="warn"
+            titulo="Integração ainda não instalada no banco: aplique as migrations 009 a 011"
+            texto="Depois de aplicar, recarregue esta página. O restante do sistema continua funcionando normalmente."
+          />
+        ) : (
+          <Aviso
+            tom="warn"
+            titulo={EM_CONFIGURACAO}
+            texto="O restante do sistema continua funcionando normalmente."
+          />
+        )}
       </>
     );
   }
@@ -212,54 +245,67 @@ export default async function IntegracoesPage() {
       {cabecalho}
 
       {/* (a) Estado da configuração */}
-      <Card>
-        <CardHeader
-          title="Estado da configuração"
-          subtitle={
-            obrigatoriasOk
-              ? "As variáveis obrigatórias estão definidas no servidor."
-              : "Faltam variáveis obrigatórias no servidor (Vercel > Settings > Environment Variables)."
-          }
-        />
-        <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
-          {VARIAVEIS.map((v) => {
-            const ok = configurado[v.nome];
-            return (
-              <div key={v.nome} className="rounded-xl border border-base-border bg-base-raised/40 px-3 py-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <code className="break-all text-xs text-ink">{v.nome}</code>
-                  <span
-                    className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-                      ok
-                        ? "border-win/30 bg-win/15 text-win"
-                        : v.obrigatoria
-                          ? "border-loss/30 bg-loss/15 text-loss"
-                          : "border-warn/30 bg-warn/15 text-warn"
-                    }`}
-                  >
-                    {ok ? "Definida" : v.obrigatoria ? "Pendente" : "Não definida"}
-                  </span>
+      {operador ? (
+        <Card>
+          <CardHeader
+            title="Estado da configuração"
+            subtitle={
+              obrigatoriasOk
+                ? "As variáveis obrigatórias estão definidas no servidor."
+                : "Faltam variáveis obrigatórias no servidor (Vercel > Settings > Environment Variables)."
+            }
+          />
+          <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
+            {VARIAVEIS.map((v) => {
+              const ok = configurado[v.nome];
+              return (
+                <div key={v.nome} className="rounded-xl border border-base-border bg-base-raised/40 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <code className="break-all text-xs text-ink">{v.nome}</code>
+                    <span
+                      className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                        ok
+                          ? "border-win/30 bg-win/15 text-win"
+                          : v.obrigatoria
+                            ? "border-loss/30 bg-loss/15 text-loss"
+                            : "border-warn/30 bg-warn/15 text-warn"
+                      }`}
+                    >
+                      {ok ? "Definida" : v.obrigatoria ? "Pendente" : "Não definida"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-ink-faint">
+                    {v.uso}
+                    {!v.obrigatoria && " (opcional)"}
+                  </p>
                 </div>
-                <p className="mt-1 text-[11px] text-ink-faint">
-                  {v.uso}
-                  {!v.obrigatoria && " (opcional)"}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-        <div className="border-t border-base-border px-5 py-4">
-          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">
-            URL do webhook
+              );
+            })}
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <code className="min-w-0 flex-1 break-all rounded-xl border border-base-border bg-base-raised px-3 py-2 text-xs text-ink">
-              {urlWebhook}
-            </code>
-            <CopiarTexto texto={urlWebhook} />
+          <div className="border-t border-base-border px-5 py-4">
+            <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">
+              URL do webhook
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <code className="min-w-0 flex-1 break-all rounded-xl border border-base-border bg-base-raised px-3 py-2 text-xs text-ink">
+                {urlWebhook}
+              </code>
+              <CopiarTexto texto={urlWebhook} />
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader
+            title={obrigatoriasOk ? "Integração ativa" : "Integração em configuração pela equipe Lead Master"}
+            subtitle={
+              obrigatoriasOk
+                ? "Os leads dos formulários vinculados abaixo entram automaticamente no Lead Master."
+                : "Você já pode cadastrar os vínculos abaixo; os leads começam a chegar quando a configuração for concluída."
+            }
+          />
+        </Card>
+      )}
 
       {/* (b) Vínculos */}
       <Card className="mt-6">
@@ -392,13 +438,32 @@ export default async function IntegracoesPage() {
       <Card className="mt-6">
         <CardHeader title="Como conectar" subtitle="Passo a passo resumido." />
         <ol className="list-decimal space-y-2 px-9 py-5 text-sm text-ink-muted">
-          <li>Defina as variáveis de ambiente acima na Vercel e publique novamente.</li>
-          <li>No painel da Meta, cadastre a URL do webhook e o mesmo META_VERIFY_TOKEN, assinando o campo leadgen da Página.</li>
-          <li>Cadastre aqui o vínculo de cada Página (e formulário) com a equipe que atenderá os leads.</li>
+          {operador && (
+            <li>Defina as variáveis de ambiente acima na Vercel e publique novamente.</li>
+          )}
+          {operador && (
+            <li>No painel da Meta, cadastre a URL do webhook e o mesmo META_VERIFY_TOKEN, assinando o campo leadgen do objeto Page.</li>
+          )}
+          <li>
+            Instale o app na Página: <code className="text-ink">POST /&#123;page-id&#125;/subscribed_apps</code> com{" "}
+            <code className="text-ink">subscribed_fields=leadgen</code>, usando o token da Página. Sem essa instalação a
+            Meta não envia os avisos de lead dessa Página.
+          </li>
+          <li>
+            {operador
+              ? "Cadastre aqui o vínculo de cada Página (e formulário) com a equipe que atenderá os leads. Página nova só pode ser cadastrada por operador interno."
+              : "Cadastre aqui o vínculo de cada Página liberada (e formulário) com a equipe que atenderá os leads."}
+          </li>
           <li>Envie um lead de teste pela ferramenta de testes da Meta e confira o evento na lista acima.</li>
         </ol>
         <p className="border-t border-base-border px-5 py-3 text-xs text-ink-faint">
-          Detalhes completos em <code className="text-ink-muted">docs/integracao-meta/configuracao.md</code>.
+          {operador ? (
+            <>
+              Detalhes completos em <code className="text-ink-muted">docs/integracao-meta/configuracao.md</code>.
+            </>
+          ) : (
+            "Dúvidas ou Página nova: fale com o suporte do Lead Master."
+          )}
         </p>
       </Card>
     </>

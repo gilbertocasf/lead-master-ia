@@ -29,6 +29,7 @@ export interface Corretor {
   ativo: boolean;
   avatarIniciais: string;
   usuarioId?: string | null; // vínculo com usuarios.id (login)
+  ultimoLeadRecebidoEm?: string | null; // base da fila justa de distribuição
 }
 
 export interface Lead {

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { fetchTudoEscopado } from "@/lib/supabase-queries";
@@ -5,6 +6,8 @@ import { PIPELINE_ORDER, STATUS_LABEL, LeadStatus } from "@/lib/types";
 import { StatusDropdown } from "@/components/pipeline/StatusDropdown";
 import { PipelineSlaBadge } from "@/components/pipeline/PipelineSlaBadge";
 import { StatusPill } from "@/components/ui/StatusPill";
+
+export const metadata = { title: "Pipeline" };
 
 const COLUMN_ACCENT: Record<LeadStatus, string> = {
   novo: "#3B82F6",
@@ -28,10 +31,10 @@ export default async function PipelinePage() {
           title="Pipeline"
           description="Acompanhamento por etapas do funil."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -40,10 +43,12 @@ export default async function PipelinePage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -57,10 +62,10 @@ export default async function PipelinePage() {
           title="Pipeline"
           description="Movimente cada lead pelas etapas até o fechamento."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -69,10 +74,12 @@ export default async function PipelinePage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -90,7 +97,7 @@ export default async function PipelinePage() {
     ? "Acompanhe o andamento das suas oportunidades e mova cada lead pelas etapas do funil."
     : isCaptador
       ? "Visualize o andamento dos leads que você captou. Alterações de status são feitas pelo corretor ou gestor."
-      : "Movimente cada lead pelas etapas até o fechamento. Cada coluna é um estágio do funil.";
+      : "Movimente cada lead pelas etapas até o fechamento. Cada mudança de status fica registrada no histórico do lead.";
 
   return (
     <>
@@ -121,23 +128,26 @@ export default async function PipelinePage() {
                 {cards.map((lead) => {
                   const corretor = getCorretor(lead.corretorId);
                   const equipe = getEquipe(lead.equipeId);
+                  const detalhes = [lead.regiao, lead.faixaValor].filter(Boolean).join(" • ");
                   return (
                     <div
                       key={lead.id}
                       className="rounded-xl border border-base-border bg-base-surface p-3 shadow-card transition-colors hover:border-base-raised"
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
-                        <span className="text-sm font-medium text-ink">{lead.nome}</span>
+                        <Link href={`/leads/${lead.id}`} className="min-w-0 break-words text-sm font-medium text-ink hover:text-action hover:underline">
+                          {lead.nome}
+                        </Link>
                         <span
                           className="h-2 w-2 shrink-0 rounded-full"
                           style={{ backgroundColor: equipe?.cor }}
-                          title={equipe?.nome}
+                          title={equipe?.nome ?? "Sem equipe"}
                         />
                       </div>
-                      <p className="mb-3 text-xs text-ink-muted">{lead.interesse}</p>
-                      <div className="mb-3 text-xs text-ink-faint">
-                        {lead.regiao} • {lead.faixaValor}
-                      </div>
+                      {lead.interesse && (
+                        <p className="mb-3 text-xs text-ink-muted">{lead.interesse}</p>
+                      )}
+                      {detalhes && <div className="mb-3 text-xs text-ink-faint">{detalhes}</div>}
                       <div className="flex items-center justify-between border-t border-base-border pt-2.5">
                         {corretor ? (
                           <div className="flex items-center gap-2">

@@ -84,7 +84,7 @@ export function DesativarCorretorModal({ corretor }: Props) {
             aria-hidden="true"
           />
 
-          <div className="relative w-full max-w-sm rounded-2xl border border-base-border bg-base-surface shadow-2xl">
+          <div className="relative w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-base-border bg-base-surface shadow-card">
             <div className="flex items-center justify-between border-b border-base-border px-5 py-4">
               <div>
                 <h2 className="font-display text-base font-semibold text-ink">

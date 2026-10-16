@@ -1,7 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const ROTAS_PUBLICAS = ["/privacidade", "/robots.txt"];
+
 export async function middleware(request: NextRequest) {
+  // Webhooks e cron não usam sessão: a autenticação deles é a assinatura da
+  // Meta (X-Hub-Signature-256) e o CRON_SECRET, verificados na própria rota.
+  const caminho = request.nextUrl.pathname;
+  if (caminho.startsWith("/api/webhooks/") || caminho.startsWith("/api/cron/")) {
+    return NextResponse.next();
+  }
+
   // Sem env vars Supabase: verificar se é desenvolvimento ou produção.
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -15,6 +24,11 @@ export async function middleware(request: NextRequest) {
       );
     }
     // Desenvolvimento local: mock mode, sem autenticação necessária.
+    return NextResponse.next();
+  }
+
+  // Páginas públicas, visíveis com ou sem login (sem redirecionamento).
+  if (ROTAS_PUBLICAS.includes(caminho)) {
     return NextResponse.next();
   }
 

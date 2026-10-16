@@ -119,8 +119,8 @@ export async function fetchEquipes(): Promise<Equipe[]> {
 
   return data.map((row, i) => ({
     id: String(row.id),
-    nome: row.nome ?? "—",
-    gerenteId: row.gerente ?? "—",
+    nome: row.nome ?? "Sem nome",
+    gerenteId: row.gerente ?? "",
     cor: corDaEquipe(i),
   }));
 }
@@ -143,13 +143,16 @@ export async function fetchCorretores(): Promise<Corretor[]> {
 
   return data.map((row) => ({
     id: String(row.id),
-    nome: row.nome ?? "—",
+    nome: row.nome ?? "Sem nome",
     equipeId: String(row.equipe_id),
     ordemPlantao: row.ordem_plantao ?? 0,
     emPlantao: Boolean(row.em_plantao),
     ativo: Boolean(row.ativo),
     avatarIniciais: iniciais(row.nome ?? "?"),
     usuarioId: row.usuario_id ? String(row.usuario_id) : null,
+    ultimoLeadRecebidoEm: row.ultimo_lead_recebido_em
+      ? String(row.ultimo_lead_recebido_em)
+      : null,
   }));
 }
 
@@ -170,7 +173,7 @@ export async function fetchPistas(): Promise<Lead[]> {
 
   return data.map((row) => ({
     id: String(row.id),
-    nome: row.nome ?? "—",
+    nome: row.nome ?? "Sem nome",
     telefone: row.telefone ?? "",
     origem: comoOrigem(row.origem),
     interesse: row.interesse ?? "",
@@ -266,20 +269,23 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
     // Corretores via admin (captador ainda não tem policy RLS para corretores)
     const { data: corretoresData } = await admin
       .from("corretores")
-      .select("id, nome, equipe_id, ordem_plantao, ativo, em_plantao, usuario_id")
+      .select("id, nome, equipe_id, ordem_plantao, ativo, em_plantao, ultimo_lead_recebido_em, usuario_id")
       .eq("imobiliaria_id", usuario.imobiliariaId)
       .eq("ativo", true)
       .order("ordem_plantao", { ascending: true });
 
     const corretores: Corretor[] = (corretoresData ?? []).map((row) => ({
       id: String(row.id),
-      nome: row.nome ?? "—",
+      nome: row.nome ?? "Sem nome",
       equipeId: String(row.equipe_id),
       ordemPlantao: row.ordem_plantao ?? 0,
       emPlantao: Boolean(row.em_plantao),
       ativo: Boolean(row.ativo),
       avatarIniciais: iniciais(row.nome ?? "?"),
       usuarioId: row.usuario_id ? String(row.usuario_id) : null,
+      ultimoLeadRecebidoEm: row.ultimo_lead_recebido_em
+        ? String(row.ultimo_lead_recebido_em)
+        : null,
     }));
 
     // Leads do captador via anon client (RLS filtra por captador_id = current_usuario_id após migration 007)
@@ -292,7 +298,7 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
 
     const pistas: Lead[] = pistasError ? [] : (pistasData ?? []).map((row) => ({
       id: String(row.id),
-      nome: row.nome ?? "—",
+      nome: row.nome ?? "Sem nome",
       telefone: row.telefone ?? "",
       origem: comoOrigem(row.origem),
       interesse: row.interesse ?? "",
@@ -414,7 +420,7 @@ export async function fetchUsuariosCorretores(): Promise<UsuarioCorretor[]> {
   if (error || !data) return [];
   return data.map((row) => ({
     id: String(row.id),
-    nome: String(row.nome ?? "—"),
+    nome: String(row.nome ?? "Sem nome"),
   }));
 }
 
@@ -459,7 +465,7 @@ export function getRanking(
     itens.push({
       corretorId,
       nome: c.nome,
-      equipeNome: eq?.nome ?? "—",
+      equipeNome: eq?.nome ?? "Sem equipe",
       equipeCor: eq?.cor ?? "#8A96AD",
       avatarIniciais: c.avatarIniciais,
       vgvTotal: d.total,
@@ -514,8 +520,18 @@ export function getProximoPlantao(
   dados: DadosLeadMaster,
   equipeId: string
 ): Corretor | null {
+  // Mesma regra da distribuição no banco: quem recebeu lead há mais tempo
+  // (ou nunca recebeu) vem primeiro; empate resolvido por ordem de plantão.
+  const instante = (c: Corretor): number => {
+    if (!c.ultimoLeadRecebidoEm) return 0;
+    const t = Date.parse(c.ultimoLeadRecebidoEm);
+    return Number.isNaN(t) ? 0 : t;
+  };
   const fila = dados.corretores
     .filter((c) => c.equipeId === equipeId && c.emPlantao && c.ativo)
-    .sort((a, b) => a.ordemPlantao - b.ordemPlantao);
+    .sort(
+      (a, b) =>
+        instante(a) - instante(b) || a.ordemPlantao - b.ordemPlantao
+    );
   return fila[0] ?? null;
 }

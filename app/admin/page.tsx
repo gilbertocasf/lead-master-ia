@@ -41,7 +41,7 @@ export default async function SetupClientePage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-ink-faint">
-            Lead Master IA — Operação interna
+            Lead Master IA · Operação interna
           </p>
           <h1 className="mt-2 font-display text-2xl font-bold text-ink">
             Novo cliente

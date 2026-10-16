@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { KpiCard } from "@/components/ui/KpiCard";
@@ -12,6 +13,8 @@ import {
 import { formatBRLCompact, formatPercent, timeAgo } from "@/lib/format";
 import { PIPELINE_ORDER, STATUS_LABEL, RankingItem } from "@/lib/types";
 
+export const metadata = { title: "Dashboard" };
+
 export default async function DashboardPage() {
   const { dados, usuario, semEquipe, semCorretorVinculado } =
     await fetchTudoEscopado();
@@ -23,12 +26,12 @@ export default async function DashboardPage() {
         <PageHeader
           eyebrow="Painel do corretor"
           title="Dashboard"
-          description="Seus leads, conversão e VGV do período."
+          description="Seus leads, conversão e VGV acumulados."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -37,12 +40,14 @@ export default async function DashboardPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">
-            Usuário não vinculado
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">
+              Usuário não vinculado
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -57,10 +62,10 @@ export default async function DashboardPage() {
           title="Dashboard"
           description="Painel operacional."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -69,12 +74,14 @@ export default async function DashboardPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">
-            Conta sem equipe vinculada
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">
+              Conta sem equipe vinculada
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -112,14 +119,14 @@ export default async function DashboardPage() {
         <PageHeader
           eyebrow="Painel do captador"
           title="Dashboard"
-          description={`Leads captados por você — ${usuario?.nome ?? "Captador"}.`}
+          description={`Leads cadastrados por ${usuario?.nome ?? "você"} e o andamento de cada um.`}
         />
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <KpiCard
             label="Leads captados"
             value={String(leads.length)}
-            hint="total no período"
+            hint="total cadastrado"
           />
           <KpiCard
             label="Em atendimento"
@@ -212,7 +219,7 @@ export default async function DashboardPage() {
         <PageHeader
           eyebrow="Painel do corretor"
           title="Dashboard"
-          description={`Seus leads, conversão e VGV do período — ${nomeCorretor}.`}
+          description={`${nomeCorretor}: seus leads, conversão e VGV acumulados.`}
         />
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -235,7 +242,7 @@ export default async function DashboardPage() {
           <KpiCard
             label="Total leads"
             value={String(kpi.totalLeads)}
-            hint="no período"
+            hint="recebidos até agora"
           />
         </div>
 
@@ -313,13 +320,13 @@ export default async function DashboardPage() {
         title="Dashboard"
         description={
           nomeEquipeGestor
-            ? `Desempenho da equipe ${nomeEquipeGestor} — leads, conversão e VGV do período.`
-            : "Desempenho consolidado da imobiliária — leads, conversão e VGV do período."
+            ? `Equipe ${nomeEquipeGestor}: leads, conversão e VGV acumulados.`
+            : "Todas as equipes da imobiliária: leads, conversão e VGV acumulados."
         }
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="VGV fechado" value={formatBRLCompact(kpi.vgvTotal)} hint={`${kpi.qtdVendas} vendas no mês`} accent />
+        <KpiCard label="VGV fechado" value={formatBRLCompact(kpi.vgvTotal)} hint={`${kpi.qtdVendas} vendas fechadas`} accent />
         <KpiCard label="Leads totais" value={String(kpi.totalLeads)} hint={`${kpi.naFila} aguardando distribuição`} />
         <KpiCard label="Conversão" value={formatPercent(kpi.conversao)} hint="leads → vendas fechadas" />
         <KpiCard label="Vendas" value={String(kpi.qtdVendas)} hint="negócios fechados" />
@@ -331,16 +338,22 @@ export default async function DashboardPage() {
             title="Pódio VGV"
             subtitle="Top 3 corretores por valor de vendas fechadas"
             action={
-              <a href="/ranking" className="text-sm font-medium text-action hover:underline">
+              <Link href="/ranking" className="shrink-0 text-sm font-medium text-action hover:underline">
                 Ver ranking completo
-              </a>
+              </Link>
             }
           />
-          <div className="grid grid-cols-3 items-end gap-3 px-5 py-8 sm:gap-6 sm:px-8">
-            {podio[1] && <PodiumStep item={podio[1]} height="h-24" medal="2" />}
-            {podio[0] && <PodiumStep item={podio[0]} height="h-32" medal="1" champion />}
-            {podio[2] && <PodiumStep item={podio[2]} height="h-16" medal="3" />}
-          </div>
+          {podio.length === 0 ? (
+            <div className="px-5 py-8 text-sm text-ink-faint">
+              Nenhuma venda registrada ainda. O pódio aparece com a primeira venda fechada.
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 items-end gap-3 px-5 py-8 sm:gap-6 sm:px-8">
+              {podio[1] && <PodiumStep item={podio[1]} height="h-24" medal="2" />}
+              {podio[0] && <PodiumStep item={podio[0]} height="h-32" medal="1" champion />}
+              {podio[2] && <PodiumStep item={podio[2]} height="h-16" medal="3" />}
+            </div>
+          )}
         </Card>
 
         <Card>
@@ -371,6 +384,11 @@ export default async function DashboardPage() {
       <Card className="mt-6">
         <CardHeader title="Leads recentes" subtitle="Últimas entradas no sistema" />
         <div className="divide-y divide-base-border">
+          {recentes.length === 0 && (
+            <div className="px-5 py-8 text-center text-sm text-ink-faint">
+              Nenhum lead recebido ainda.
+            </div>
+          )}
           {recentes.map((lead) => {
             const corretor = getCorretor(lead.corretorId);
             const equipe = getEquipe(lead.equipeId);
@@ -407,9 +425,9 @@ function PodiumStep({
   champion?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex min-w-0 flex-col items-center">
       <Avatar iniciais={item.avatarIniciais} cor={champion ? "#D4A636" : item.equipeCor} size={champion ? 52 : 42} />
-      <div className="mt-2 text-center">
+      <div className="mt-2 w-full text-center">
         <div className={`truncate text-sm font-medium ${champion ? "text-gold-soft" : "text-ink"}`}>
           {item.nome.split(" ")[0]}
         </div>

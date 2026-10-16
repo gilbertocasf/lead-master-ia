@@ -1,5 +1,5 @@
 # Roteiro de Demo Comercial — Lead Master IA
-**Duração:** 10 minutos  
+**Duração:** 12 a 15 minutos  
 **Público:** Gestor ou sócio de imobiliária  
 **Ambiente:** Vercel produção, dados Basílio Imóveis carregados, login feito antes da reunião
 
@@ -31,13 +31,25 @@
 
 ### Tela 2 — Leads (`/leads`)
 
-**O que mostrar:** fila de entrada vazia, tabela completa com leads já no pipeline.
+**O que mostrar:** fila de entrada (leads sem corretor, quando houver), botão "Distribuir fila" e tabela completa com leads já no pipeline.
 
 **O que falar:**
 
-> "Aqui está a fila de entrada — está vazia porque todos os leads que entraram já foram distribuídos automaticamente. Quando o lead entra pelo formulário, o sistema já atribui um corretor na hora. Vou mostrar."
+> "Aqui está a fila de entrada. Quando o lead chega e não há corretor de plantão na equipe, ele espera aqui. Assim que alguém entra de plantão, a fila é distribuída. O gestor também pode distribuir a fila na hora com este botão, ou atribuir um lead a um corretor específico."
 
-**O que NÃO falar:** não explicar o botão "Distribuir" por iniciativa. Se o prospect perguntar, ver seção "Perguntas frequentes".
+**O que NÃO falar:** não prometer notificação por WhatsApp (só e-mail ao corretor).
+
+---
+
+### Tela 2B — Plantão e fila (`/corretores`)
+
+**O que mostrar:** a chave de plantão dos corretores. Desligar o plantão de todos os corretores de uma equipe, cadastrar um lead para essa equipe (fica na fila em `/leads`), depois ligar o plantão de um corretor e voltar a `/leads`.
+
+**O que falar:**
+
+> "O gestor liga e desliga o plantão aqui, direto pelo sistema. Vou deixar todo mundo da equipe fora do plantão e cadastrar um lead: ele fica na fila, sem corretor. Agora ligo o plantão deste corretor... a fila é distribuída sozinha para ele. O gestor não precisou distribuir nada."
+
+**Atenção:** gestor só controla a própria equipe; o admin controla todas. Ensaiar antes e usar uma equipe de demonstração.
 
 ---
 
@@ -73,6 +85,44 @@
 
 ---
 
+### Tela 4B — Lead da Meta ao vivo (ferramenta de teste)
+
+**O que mostrar:** na ferramenta de leads de teste da Meta, enviar um lead com nome e telefone fictícios. Em `/leads` (ou `/pipeline`) ele aparece, já distribuído a um corretor, com origem Facebook/Instagram.
+
+**O que falar:**
+
+> "Agora o caminho real. Este é o formulário de anúncio da Meta; vou enviar um lead de teste... Em alguns segundos ele aparece aqui, já na equipe certa e já com o corretor de plantão. Ninguém copiou nem colou nada."
+
+**O que NÃO falar:** não dizer que é "um clique": a conexão exige configuração inicial na Meta (feita uma vez). Não prometer WhatsApp.
+
+**Plano B:** se a Meta não colaborar (teste não dispara, atraso, instabilidade), não insistir por mais de 1 minuto. Cadastre o lead manualmente pelo "Novo lead" (origem Instagram) e diga: "Quando o lead vem da Meta, o resultado é exatamente este. Vou mostrar o registro de um lead que já chegou por lá." Em seguida mostre a página de um lead de origem Meta já existente (histórico e anúncio) e a tela de Integrações com os eventos processados.
+
+---
+
+### Tela 4C — Página do lead (`/leads/[id]`)
+
+**O que mostrar:** abrir o lead (pela lista). Linha do tempo com criação, distribuição e mudanças de status; dados de origem (anúncio e campanha, quando vieram da Meta); respostas do formulário.
+
+**O que falar:**
+
+> "Cada lead tem sua página com o histórico completo: quando entrou, de qual anúncio e campanha veio, para quem foi distribuído e o que aconteceu depois. Se o mesmo cliente chamar de novo, a nova entrada também fica registrada aqui, em vez de criar um lead repetido."
+
+**O que NÃO falar:** o lead de teste da Meta pode não trazer nome de anúncio e campanha; não prometer o mesmo detalhe em testes.
+
+---
+
+### Tela 4D — Integrações (`/integracoes`, só admin)
+
+**O que mostrar:** estado das variáveis (configurado/pendente), vínculos Página/formulário com a equipe, lista dos últimos eventos com status.
+
+**O que falar:**
+
+> "Aqui o gestor-administrador acompanha a ligação com a Meta: cada Página e formulário aponta para uma equipe, e cada lead recebido aparece como evento. Se algo falha, o sistema tenta de novo sozinho e avisa por e-mail, e o evento com erro pode ser reprocessado com um clique."
+
+**O que NÃO falar:** não mostrar valores de tokens (a tela não os exibe); não abrir a tela se houver eventos de erro antigos sem explicação.
+
+---
+
 ### Tela 5 — Ranking (`/ranking`)
 
 **O que mostrar:** ranking de corretores por VGV, filtro por equipe (Genesis / Arkanjos).
@@ -89,9 +139,9 @@
 
 ---
 
-**"E esse botão Distribuir na fila de leads, para que serve?"**
+**"E esse botão Distribuir fila, para que serve?"**
 
-> "É um fallback. Se por algum motivo o lead entrou quando nenhum corretor estava de plantão, o gestor pode distribuir manualmente depois. No fluxo normal, quando há corretor disponível, a distribuição já acontece no momento do cadastro — sem precisar clicar nisso."
+> "Quando o lead entra e ninguém está de plantão, ele espera na fila. A fila é distribuída automaticamente quando um corretor entra de plantão, e o gestor pode distribuir na hora com esse botão. Também dá para atribuir um lead a um corretor específico."
 
 ---
 
@@ -103,7 +153,7 @@
 
 **"E Meta Ads, integra automaticamente?"**
 
-> "O Meta Ads pode ser conectado via webhook — o lead que vem do formulário de lead do Meta pode cair aqui automaticamente com uma configuração simples. Não é um clique, mas é configurável. Posso mostrar como funciona tecnicamente se quiser aprofundar."
+> "Sim, com os formulários de lead do Facebook e Instagram. Depois de uma configuração inicial, feita uma vez, cada lead entra sozinho, vai para a equipe vinculada ao formulário e é distribuído. Se um aviso da Meta se perder, uma rotina busca os leads das últimas horas. A configuração depende da conta da Meta da imobiliária."
 
 ---
 
@@ -121,7 +171,7 @@
 
 **"Posso ver o histórico de alterações de um lead?"**
 
-> "Sim. Cada evento — criação, distribuição, mudança de status — fica registrado com timestamp. Hoje esse histórico está no banco; a tela de visualização por lead está no roadmap próximo."
+> "Sim. Abrindo o lead você vê a linha do tempo: criação, distribuição, mudanças de status e novas entradas do mesmo cliente, cada uma com data e hora."
 
 ---
 
@@ -136,7 +186,13 @@ Executar no mínimo 5 minutos antes da reunião:
 - [ ] Abrir `/ranking` — verificar que há corretores com VGV > 0
 - [ ] Abrir `/corretores` — confirmar que há corretores listados
 - [ ] Testar o modal "Novo lead" uma vez antes (criar e apagar se necessário)
-- [ ] Confirmar que o último deploy da Vercel está na branch `main`
+- [ ] Ensaiar o plantão: desligar/ligar um corretor e ver a fila ser distribuída
+- [ ] Meta: enviar um lead de teste antes da reunião e conferir em `/integracoes` o status Processado
+- [ ] Deixar a ferramenta de leads de teste da Meta aberta e logada, formulário já escolhido
+- [ ] Abrir `/integracoes` e conferir variáveis configuradas e vínculo da Página com a equipe
+- [ ] Ter à mão um lead de origem Meta já existente (plano B)
+- [ ] Corretores de demonstração em plantão antes do lead ao vivo
+- [ ] Confirmar que o último deploy da Vercel está na branch `main` (com as migrations 009 a 011 aplicadas)
 - [ ] Fechar abas desnecessárias — deixar apenas o app aberto
 
 ---
@@ -158,7 +214,7 @@ O prospect demonstrou interesse real se ao menos **dois** dos seguintes ocorrere
 | Sinal | O que significa |
 |-------|----------------|
 | Perguntou sobre preço ou modelo comercial | Está avaliando viabilidade |
-| Pediu para ver o histórico de leads ou auditoria | Pensa em adotar operacionalmente |
+| Pediu para ver o histórico de leads ou auditoria (página do lead) | Pensa em adotar operacionalmente |
 | Perguntou como conectar ao Meta Ads ou CRM atual | Está pensando na integração real |
 | Pediu um teste com os próprios dados | Quer validar antes de decidir |
 | Mencionou um problema específico que o produto resolve | Reconheceu fit com a dor |

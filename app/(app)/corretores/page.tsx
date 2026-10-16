@@ -9,7 +9,10 @@ import {
 import { EditarVinculoCorretorModal } from "@/components/EditarVinculoCorretorModal";
 import { NovoCorretorModal } from "@/components/NovoCorretorModal";
 import { DesativarCorretorModal } from "@/components/DesativarCorretorModal";
+import { PlantaoToggle } from "@/components/PlantaoToggle";
 import { formatBRLCompact } from "@/lib/format";
+
+export const metadata = { title: "Corretores" };
 
 export default async function CorretoresPage() {
   const { dados, usuario, semEquipe } = await fetchTudoEscopado();
@@ -22,7 +25,7 @@ export default async function CorretoresPage() {
           title="Corretores"
           description="Quadro de corretores por equipe."
         />
-        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
+        <div className="rounded-2xl border border-base-border bg-base-surface px-5 py-4">
           <p className="text-sm font-semibold text-ink-muted">Área administrativa</p>
           <p className="mt-1 text-xs text-ink-muted">
             Disponível apenas para administradores e gestores.
@@ -40,10 +43,10 @@ export default async function CorretoresPage() {
           title="Corretores"
           description="Quadro de corretores por equipe."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -52,10 +55,12 @@ export default async function CorretoresPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -97,6 +102,12 @@ export default async function CorretoresPage() {
         }
       />
 
+      {corretores.length === 0 && (
+        <div className="rounded-2xl border border-base-border bg-base-surface px-5 py-4 text-sm text-ink-muted">
+          Nenhum corretor ativo. Sem corretor em plantão, os leads ficam na fila da equipe.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {corretores.map((c) => {
           const equipe = getEquipe(c.equipeId);
@@ -109,7 +120,7 @@ export default async function CorretoresPage() {
                   <div className="truncate font-medium text-ink">{c.nome}</div>
                   <div className="flex items-center gap-1.5 text-xs text-ink-muted">
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: equipe?.cor }} />
-                    {equipe?.nome}
+                    {equipe?.nome ?? "Sem equipe"}
                   </div>
                 </div>
                 {c.emPlantao ? (
@@ -117,7 +128,7 @@ export default async function CorretoresPage() {
                     <span className="h-1.5 w-1.5 rounded-full bg-win" /> Plantão
                   </span>
                 ) : (
-                  <span className="rounded-full bg-base-raised px-2 py-0.5 text-[11px] font-medium text-ink-faint">Fora</span>
+                  <span className="rounded-full bg-base-raised px-2 py-0.5 text-[11px] font-medium text-ink-faint">Fora do plantão</span>
                 )}
               </div>
 
@@ -139,6 +150,15 @@ export default async function CorretoresPage() {
               <div className="mt-3 text-[11px] text-ink-faint">
                 Ordem de plantão: <span className="text-ink-muted">{c.ordemPlantao}º</span>
               </div>
+
+              {/* Plantão — admin e gestor (corretor/captador não chegam aqui) */}
+              {(usuario?.role === "admin" || usuario?.role === "gestor") && (
+                <PlantaoToggle
+                  corretorId={c.id}
+                  emPlantao={c.emPlantao}
+                  nome={c.nome}
+                />
+              )}
 
               {/* Botões administrativos — apenas para admin */}
               {isAdmin && (

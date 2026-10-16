@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { isMockMode } from "@/lib/supabase";
@@ -85,6 +86,14 @@ export default async function LoginPage({
 
         <p className="mt-6 text-center text-xs text-ink-faint">
           Sem cadastro público. Solicite acesso ao administrador.
+        </p>
+        <p className="mt-2 text-center text-xs">
+          <Link
+            href="/privacidade"
+            className="text-ink-faint underline-offset-2 hover:text-ink-muted hover:underline"
+          >
+            Política de privacidade
+          </Link>
         </p>
       </div>
     </div>

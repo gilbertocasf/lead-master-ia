@@ -39,14 +39,13 @@ Não tratar como CRM genérico. CRMs genéricos (RD Station, Pipedrive) não tê
 
 ## Estado atual do projeto
 
-- App publicado na Vercel e conectado ao Supabase real
-- Leitura de dados real funcionando
-- Deploy Vercel resolvido (era problema de Root Directory — já corrigido)
-- **Autenticação SSR implementada** (Fase 6.1): login/logout, middleware, RLS funcional
-- **Migration 002 aplicada no banco**: RLS em 7 tabelas, multi-tenancy, `usuarios`, `imobiliarias`, `historico_leads`
-- Operações de escrita (leads, distribuição, pipeline) ainda não implementadas
+- App publicado na Vercel (a partir de `main`) e conectado ao Supabase real
+- Leitura de dados real funcionando; autenticação SSR (login/logout, middleware, RLS)
+- **Escrita implementada**: cadastro de lead, distribuição automática, pipeline com histórico, plantão pelo app, distribuição da fila e atribuição manual
+- **Migrations 001–008 em produção.** Migrations 009–011 (segurança por equipe, estrutura Meta, RPCs de distribuição) existem no branch `feat/prontidao-meta-leads` e **ainda não foram aplicadas** (guia: `docs/setup/aplicar-migrations-009-011.md`)
+- **Integração Meta (Lead Ads) implementada neste branch, aguardando configuração**: webhook `/api/webhooks/meta`, cron `/api/cron/meta`, tela `/integracoes`, página do lead `/leads/[id]`. Passo a passo em `docs/integracao-meta/configuracao.md` e `docs/integracao-meta/checklist-go-live.md`; contrato técnico em `docs/planejamento/contrato-tecnico-meta-leads.md`
+- Neste ambiente de desenvolvimento não há acesso ao npm: **sem build nem lint locais**; validar com `npm run build` e `npm run lint` fora daqui antes de publicar
 - A fase de auditorias estratégicas foi **concluída** (Fases 1 a 3.1-D)
-- A próxima fase é implementação da captura e distribuição de leads (Fase 6.2)
 
 ---
 
@@ -99,10 +98,14 @@ Implementar nesta ordem:
 
 ## Riscos conhecidos
 
-- **Botões visuais**: ações como "cadastrar lead", "distribuir", "mover no pipeline" existem na UI mas não têm implementação real. São o principal alvo da Fase 6.2.
-- **`valor_vgv` em `vendas`**: a coluna manteve o nome original após a migration 002 (que não renomeia colunas). `fetchVendas()` seleciona `valor_vgv` — correto. O arquivo `supabase/schema.v2.sql` planejou renomear para `valor`, mas esse arquivo nunca foi aplicado e **não deve ser aplicado** (começa com DROP TABLE).
-- **Sidebar com usuário mock**: a Sidebar exibe "João Carvalho / Administrador" fixo. Substituir pelo usuário autenticado real é trabalho da Fase 6.2 (ou antes, se necessário).
-- **`schema.v2.sql` não deve ser aplicado**: começa com `DROP TABLE ... CASCADE`. Se executado sobre o banco com dados, apaga tudo. O banco usa a migration 002, não o schema.v2.
+- **Código novo sem build validado**: o branch `feat/prontidao-meta-leads` não foi compilado nem passou por lint. Rodar `npm run build` e `npm run lint` antes de mesclar em `main` (a Vercel publica `main` automaticamente).
+- **Migrations 009–011 pendentes em produção**: sem elas, a integração Meta, a fila, a atribuição manual e o plantão pelo app respondem `migration_pendente`. Depois da 009, gestor sem `equipe_id` não vê nada: conferir antes. Aplicar 010 e 011 em sequência.
+- **Integração Meta depende de configuração externa**: variáveis (`META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_ACCESS_TOKEN`, `CRON_SECRET`, `ALERTA_EMAILS`), app na Meta, webhook, instalação na Página e cron. Acesso Avançado (Análise do App e Verificação da Empresa) só é necessário para Páginas de terceiros.
+- **Cron e plano da Vercel**: no plano Hobby só cron diário; um `vercel.json` com cron mais frequente faz o deploy falhar. Por isso o repositório não traz `vercel.json`. Em Hobby, usar agendador externo chamando `GET /api/cron/meta` com `Authorization: Bearer <CRON_SECRET>`.
+- **Token da Meta**: token de 60 dias expira e interrompe a leitura de leads (há alerta por e-mail); preferir token de Usuário do Sistema sem expiração.
+- **`valor_vgv` em `vendas`**: a coluna manteve o nome original após a migration 002 (que não renomeia colunas). `fetchVendas()` seleciona `valor_vgv` — correto. O arquivo `supabase/schema.v2.sql` planejou renomear para `valor`, mas nunca foi aplicado.
+- **`schema.v2.sql` não deve ser aplicado**: começa com `DROP TABLE ... CASCADE`. Se executado sobre o banco com dados, apaga tudo. O banco usa as migrations, não o schema.v2.
+- **Sem suíte de testes**: a validação é manual (ver roteiro de demo e checklist de go-live).
 
 ---
 

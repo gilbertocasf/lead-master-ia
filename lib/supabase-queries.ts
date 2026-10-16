@@ -119,8 +119,8 @@ export async function fetchEquipes(): Promise<Equipe[]> {
 
   return data.map((row, i) => ({
     id: String(row.id),
-    nome: row.nome ?? "—",
-    gerenteId: row.gerente ?? "—",
+    nome: row.nome ?? "Sem nome",
+    gerenteId: row.gerente ?? "",
     cor: corDaEquipe(i),
   }));
 }
@@ -143,7 +143,7 @@ export async function fetchCorretores(): Promise<Corretor[]> {
 
   return data.map((row) => ({
     id: String(row.id),
-    nome: row.nome ?? "—",
+    nome: row.nome ?? "Sem nome",
     equipeId: String(row.equipe_id),
     ordemPlantao: row.ordem_plantao ?? 0,
     emPlantao: Boolean(row.em_plantao),
@@ -173,7 +173,7 @@ export async function fetchPistas(): Promise<Lead[]> {
 
   return data.map((row) => ({
     id: String(row.id),
-    nome: row.nome ?? "—",
+    nome: row.nome ?? "Sem nome",
     telefone: row.telefone ?? "",
     origem: comoOrigem(row.origem),
     interesse: row.interesse ?? "",
@@ -276,7 +276,7 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
 
     const corretores: Corretor[] = (corretoresData ?? []).map((row) => ({
       id: String(row.id),
-      nome: row.nome ?? "—",
+      nome: row.nome ?? "Sem nome",
       equipeId: String(row.equipe_id),
       ordemPlantao: row.ordem_plantao ?? 0,
       emPlantao: Boolean(row.em_plantao),
@@ -298,7 +298,7 @@ export async function fetchTudoEscopado(): Promise<DadosEscopados> {
 
     const pistas: Lead[] = pistasError ? [] : (pistasData ?? []).map((row) => ({
       id: String(row.id),
-      nome: row.nome ?? "—",
+      nome: row.nome ?? "Sem nome",
       telefone: row.telefone ?? "",
       origem: comoOrigem(row.origem),
       interesse: row.interesse ?? "",
@@ -420,7 +420,7 @@ export async function fetchUsuariosCorretores(): Promise<UsuarioCorretor[]> {
   if (error || !data) return [];
   return data.map((row) => ({
     id: String(row.id),
-    nome: String(row.nome ?? "—"),
+    nome: String(row.nome ?? "Sem nome"),
   }));
 }
 
@@ -465,7 +465,7 @@ export function getRanking(
     itens.push({
       corretorId,
       nome: c.nome,
-      equipeNome: eq?.nome ?? "—",
+      equipeNome: eq?.nome ?? "Sem equipe",
       equipeCor: eq?.cor ?? "#8A96AD",
       avatarIniciais: c.avatarIniciais,
       vgvTotal: d.total,

@@ -12,6 +12,8 @@ import {
 } from "@/lib/supabase-queries";
 import { timeAgo } from "@/lib/format";
 
+export const metadata = { title: "Leads" };
+
 export default async function LeadsPage() {
   const { dados, usuario, semEquipe, semCorretorVinculado } =
     await fetchTudoEscopado();
@@ -25,10 +27,10 @@ export default async function LeadsPage() {
           title="Leads"
           description="Seus leads atribuídos."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -37,10 +39,12 @@ export default async function LeadsPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -52,12 +56,12 @@ export default async function LeadsPage() {
         <PageHeader
           eyebrow="Captação"
           title="Leads"
-          description="O gerente cadastra o lead e o sistema distribui automaticamente ao próximo corretor de plantão."
+          description="Cada lead cadastrado aqui ou recebido da Meta entra na fila da equipe e vai para o próximo corretor de plantão."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -66,12 +70,14 @@ export default async function LeadsPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">
-            Conta sem equipe vinculada
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">
+              Conta sem equipe vinculada
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -141,7 +147,7 @@ export default async function LeadsPage() {
                         <td className="hidden px-5 py-3 md:table-cell">
                           <span className="inline-flex items-center gap-1.5 text-ink-muted">
                             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: equipe?.cor }} />
-                            {equipe?.nome ?? "—"}
+                            {equipe?.nome ?? "Sem equipe"}
                           </span>
                         </td>
                         <td className="hidden px-5 py-3 text-ink-muted md:table-cell">
@@ -149,7 +155,7 @@ export default async function LeadsPage() {
                             ? <span className="text-warn">Aguardando</span>
                             : corretor
                               ? corretor.nome
-                              : <span className="text-ink-faint">—</span>
+                              : <span className="text-ink-faint">Corretor inativo</span>
                           }
                         </td>
                         <td className="px-5 py-3">
@@ -273,7 +279,7 @@ export default async function LeadsPage() {
       <PageHeader
         eyebrow="Captação"
         title="Leads"
-        description="O gerente cadastra o lead e o sistema distribui automaticamente ao próximo corretor de plantão."
+        description="Cada lead cadastrado aqui ou recebido da Meta entra na fila da equipe e vai para o próximo corretor de plantão."
         action={
           <NovoLeadModal equipes={equipesVisiveis} corretores={corretoresParaModal} />
         }
@@ -287,7 +293,7 @@ export default async function LeadsPage() {
           return (
             <Card key={eq.id}>
               <CardHeader
-                title={`Fila — ${eq.nome}`}
+                title={`Fila: ${eq.nome}`}
                 subtitle={`${fila.length} ${fila.length === 1 ? "lead aguardando" : "leads aguardando"} distribuição`}
                 action={
                   <div className="flex items-start gap-2">
@@ -340,7 +346,7 @@ export default async function LeadsPage() {
                     <div className="hidden text-right text-xs text-ink-faint sm:block">
                       {timeAgo(lead.criadoEm)}
                     </div>
-                    <span className="whitespace-nowrap rounded-full bg-warn/15 px-2.5 py-1 text-[11px] font-medium text-warn">
+                    <span className="hidden whitespace-nowrap rounded-full bg-warn/15 px-2.5 py-1 text-[11px] font-medium text-warn sm:inline">
                       Na fila
                     </span>
                     <AtribuirLeadModal
@@ -393,7 +399,7 @@ export default async function LeadsPage() {
                     <td className="hidden px-5 py-3 md:table-cell">
                       <span className="inline-flex items-center gap-1.5 text-ink-muted">
                         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: equipe?.cor }} />
-                        {equipe?.nome}
+                        {equipe?.nome ?? "Sem equipe"}
                       </span>
                     </td>
                     <td className="hidden px-5 py-3 text-ink-muted md:table-cell">
@@ -401,7 +407,9 @@ export default async function LeadsPage() {
                         ? <span className="text-warn">Na fila</span>
                         : lead.corretorId !== null && corretor
                           ? corretor.nome
-                          : <span className="text-ink-faint">—</span>
+                          : <span className="text-ink-faint">
+                              {lead.corretorId === null ? "Sem corretor" : "Corretor inativo"}
+                            </span>
                       }
                     </td>
                     <td className="px-5 py-3">

@@ -93,7 +93,7 @@ export function NovaEquipeModal() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={fechar} aria-hidden="true" />
 
-          <div className="relative w-full max-w-sm rounded-2xl border border-base-border bg-base-surface shadow-2xl">
+          <div className="relative w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-base-border bg-base-surface shadow-card">
             <div className="flex items-center justify-between border-b border-base-border px-5 py-4">
               <h2 className="font-display text-base font-semibold text-ink">Nova equipe</h2>
               <button

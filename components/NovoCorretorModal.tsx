@@ -122,7 +122,7 @@ export function NovoCorretorModal({ equipes }: Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={fechar} aria-hidden="true" />
 
-          <div className="relative w-full max-w-md rounded-2xl border border-base-border bg-base-surface shadow-2xl">
+          <div className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-base-border bg-base-surface shadow-card">
             <div className="flex items-center justify-between border-b border-base-border px-5 py-4">
               <h2 className="font-display text-base font-semibold text-ink">Adicionar corretor</h2>
               <button
@@ -192,7 +192,7 @@ export function NovoCorretorModal({ equipes }: Props) {
               </div>
 
               {/* E-mail + Telefone */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-ink-muted">
                     E-mail
@@ -202,7 +202,7 @@ export function NovoCorretorModal({ equipes }: Props) {
                     value={form.email}
                     onChange={campo("email")}
                     className={inputCls}
-                    placeholder="corretor@imob.com"
+                    placeholder="E-mail do corretor"
                     disabled={loading}
                   />
                 </div>

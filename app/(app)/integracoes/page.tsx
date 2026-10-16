@@ -15,6 +15,8 @@ import { funcaoAusente } from "@/lib/rpc";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Integrações" };
+
 const STATUS_EVENTO = ["recebido", "processando", "processado", "duplicado", "ignorado", "erro"] as const;
 type StatusEvento = (typeof STATUS_EVENTO)[number];
 
@@ -85,7 +87,7 @@ function Aviso({ titulo, texto, tom }: { titulo: string; texto: string; tom: "wa
   const cls = tom === "warn" ? "border-warn/30 bg-warn/10" : "border-loss/30 bg-loss/10";
   const txt = tom === "warn" ? "text-warn" : "text-loss";
   return (
-    <div className={`rounded-2xl border px-6 py-8 text-center ${cls}`}>
+    <div className={`rounded-2xl border px-5 py-4 ${cls}`}>
       <p className={`text-sm font-semibold ${txt}`}>{titulo}</p>
       <p className="mt-1 text-xs text-ink-muted">{texto}</p>
     </div>
@@ -118,7 +120,7 @@ export default async function IntegracoesPage() {
           title="Integrações"
           description="Conexão com os formulários de anúncios da Meta."
         />
-        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
+        <div className="rounded-2xl border border-base-border bg-base-surface px-5 py-4">
           <p className="text-sm font-semibold text-ink-muted">Área administrativa</p>
           <p className="mt-1 text-xs text-ink-muted">Disponível apenas para administradores.</p>
         </div>
@@ -332,13 +334,13 @@ export default async function IntegracoesPage() {
                 {roteamentos.map((r) => (
                   <tr key={r.id} className="hover:bg-base-raised/40">
                     <td className="px-5 py-3">
-                      <div className="text-ink">{nomePagina.get(r.page_id) ?? "—"}</div>
+                      <div className="text-ink">{nomePagina.get(r.page_id) ?? "Sem nome"}</div>
                       <div className="tnum text-xs text-ink-faint">{r.page_id}</div>
                     </td>
                     <td className="px-5 py-3">
                       {r.form_id ? (
                         <>
-                          <div className="text-ink">{r.form_nome ?? "—"}</div>
+                          <div className="text-ink">{r.form_nome ?? "Sem nome"}</div>
                           <div className="tnum text-xs text-ink-faint">{r.form_id}</div>
                         </>
                       ) : (
@@ -401,7 +403,7 @@ export default async function IntegracoesPage() {
                     <tr key={ev.id} className="hover:bg-base-raised/40">
                       <td className="whitespace-nowrap px-5 py-3 text-ink-muted">{quando(ev.recebido_em)}</td>
                       <td className="px-5 py-3 text-ink-muted">{ORIGEM_ROTULO[ev.origem] ?? ev.origem}</td>
-                      <td className="tnum px-5 py-3 text-xs text-ink-muted">{ev.form_id ?? "—"}</td>
+                      <td className="tnum px-5 py-3 text-xs text-ink-muted">{ev.form_id ?? "Sem formulário"}</td>
                       <td className="px-5 py-3">
                         <span
                           className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_ESTILO[st]}`}
@@ -411,7 +413,7 @@ export default async function IntegracoesPage() {
                       </td>
                       <td className="tnum px-5 py-3 text-ink-muted">{ev.tentativas}</td>
                       <td className="max-w-[260px] px-5 py-3 text-xs text-ink-muted">
-                        {ev.ultimo_erro ? <span className="break-words">{ev.ultimo_erro}</span> : "—"}
+                        {ev.ultimo_erro ? <span className="break-words">{ev.ultimo_erro}</span> : "Nenhum"}
                       </td>
                       <td className="px-5 py-3">
                         {ev.lead_id ? (
@@ -419,7 +421,7 @@ export default async function IntegracoesPage() {
                             Ver lead
                           </Link>
                         ) : (
-                          <span className="text-ink-faint">—</span>
+                          <span className="text-xs text-ink-faint">Sem lead</span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right">

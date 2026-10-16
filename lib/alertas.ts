@@ -87,7 +87,7 @@ export async function enviarAlerta(
           subject: `[Lead Master IA] ${assuntoLimpo}`,
           text:
             texto.slice(0, MAX_TEXTO) +
-            "\n\n— Alerta automático do Lead Master IA (integração Meta).",
+            "\n\nAlerta automático do Lead Master IA (integração Meta).",
         }),
         signal: controller.signal,
         cache: "no-store",

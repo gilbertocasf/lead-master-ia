@@ -10,6 +10,10 @@ import { STATUS_LABEL, type LeadStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Lead" };
+
+const VAZIO = "Não informado";
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const CANAL_ROTULO: Record<string, string> = {
@@ -42,12 +46,12 @@ function texto(v: unknown): string | null {
 
 function statusLabel(v: unknown): string {
   const s = texto(v);
-  if (!s) return "—";
+  if (!s) return "Sem status";
   return STATUS_LABEL[s as LeadStatus] ?? s;
 }
 
-function quando(iso: string | null | undefined): string {
-  if (!iso) return "—";
+function quando(iso: string | null | undefined, vazio: string = VAZIO): string {
+  if (!iso) return vazio;
   return new Date(iso).toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -65,7 +69,7 @@ function humanizar(chave: string): string {
 
 function valorTexto(v: unknown): string {
   if (Array.isArray(v)) return v.map(valorTexto).join(", ");
-  if (v === null || v === undefined) return "—";
+  if (v === null || v === undefined) return "Sem resposta";
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
 }
@@ -234,20 +238,20 @@ export default async function LeadDetalhePage({ params }: { params: { id: string
           <Card>
             <CardHeader title="Dados do lead" />
             <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-1">
-              <Campo rotulo="Telefone">{lead.telefone ?? "—"}</Campo>
-              <Campo rotulo="Origem">{lead.origem ?? "—"}</Campo>
+              <Campo rotulo="Telefone">{lead.telefone ?? VAZIO}</Campo>
+              <Campo rotulo="Origem">{lead.origem ?? VAZIO}</Campo>
               <Campo rotulo="Canal">{CANAL_ROTULO[canal] ?? canal}</Campo>
-              <Campo rotulo="Interesse">{lead.interesse ?? "—"}</Campo>
-              <Campo rotulo="Faixa de valor">{lead.faixa_valor ?? "—"}</Campo>
-              <Campo rotulo="Equipe">{equipeNome ?? "—"}</Campo>
+              <Campo rotulo="Interesse">{lead.interesse ?? VAZIO}</Campo>
+              <Campo rotulo="Faixa de valor">{lead.faixa_valor ?? VAZIO}</Campo>
+              <Campo rotulo="Equipe">{equipeNome ?? "Sem equipe"}</Campo>
               <Campo rotulo="Corretor">
                 {lead.corretor_id === null ? (
                   <span className="text-warn">Na fila</span>
                 ) : (
-                  corretorNome ?? "—"
+                  corretorNome ?? "Corretor inativo"
                 )}
               </Campo>
-              <Campo rotulo="Distribuído em">{quando(lead.distribuido_em)}</Campo>
+              <Campo rotulo="Distribuído em">{quando(lead.distribuido_em, "Ainda não distribuído")}</Campo>
               {lead.observacoes && (
                 <div className="sm:col-span-2 lg:col-span-1">
                   <Campo rotulo="Observações">
@@ -267,22 +271,22 @@ export default async function LeadDetalhePage({ params }: { params: { id: string
                     ? "Instagram"
                     : meta?.plataforma === "facebook"
                       ? "Facebook"
-                      : "—"}
+                      : "Não informada"}
                 </Campo>
                 <Campo rotulo="Campanha">
-                  {texto(meta?.meta_campanha_nome) ?? "—"}
+                  {texto(meta?.meta_campanha_nome) ?? VAZIO}
                   {texto(meta?.meta_campaign_id) && (
                     <div className="tnum text-xs text-ink-faint">{texto(meta?.meta_campaign_id)}</div>
                   )}
                 </Campo>
                 <Campo rotulo="Anúncio">
-                  {texto(meta?.meta_ad_nome) ?? "—"}
+                  {texto(meta?.meta_ad_nome) ?? VAZIO}
                   {texto(meta?.meta_ad_id) && (
                     <div className="tnum text-xs text-ink-faint">{texto(meta?.meta_ad_id)}</div>
                   )}
                 </Campo>
                 <Campo rotulo="Formulário">
-                  <span className="tnum">{texto(meta?.meta_form_id) ?? "—"}</span>
+                  <span className="tnum">{texto(meta?.meta_form_id) ?? VAZIO}</span>
                 </Campo>
                 <Campo rotulo="Preenchido na Meta em">{quando(texto(meta?.meta_criado_em))}</Campo>
               </div>

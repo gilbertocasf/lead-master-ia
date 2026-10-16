@@ -3,12 +3,9 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { isMockMode } from "@/lib/supabase";
 import { notificarCorretorNovoLead, type EmailStatus } from "@/lib/email";
+import { normalizarTelefone, telefoneValido } from "@/lib/telefone";
 
 const ORIGENS_VALIDAS = ["Instagram", "Facebook", "Outro"] as const;
-
-function normalizarTelefone(tel: string): string {
-  return tel.replace(/\D/g, "");
-}
 
 // Tipos do retorno da RPC criar_e_distribuir_lead
 interface RpcLead {
@@ -30,10 +27,21 @@ interface RpcResultCriado {
 
 interface RpcResultDuplicata {
   status: "duplicata";
-  lead_existente: { id: string; nome: string; created_at: string };
+  lead_existente: {
+    id: string;
+    nome: string;
+    created_at: string;
+    corretor_id?: string | null;
+  };
 }
 
-type RpcResult = RpcResultCriado | RpcResultDuplicata;
+// v4: só ocorre quando meta_leadgen_id já existe (não esperado no cadastro manual).
+interface RpcResultJaProcessado {
+  status: "ja_processado";
+  lead_id: string;
+}
+
+type RpcResult = RpcResultCriado | RpcResultDuplicata | RpcResultJaProcessado;
 
 export async function POST(req: NextRequest) {
   if (isMockMode) {
@@ -114,7 +122,7 @@ export async function POST(req: NextRequest) {
   }
 
   const telefoneNormalizado = normalizarTelefone(telefone);
-  if (telefoneNormalizado.length < 10) {
+  if (!telefoneValido(telefoneNormalizado)) {
     return NextResponse.json({ erro: "telefone_invalido" }, { status: 400 });
   }
 
@@ -195,6 +203,7 @@ export async function POST(req: NextRequest) {
         faixa_valor:          faixa_valor || null,
         observacoes:          observacoes || null,
         criado_por:           "formulario",
+        canal:                "manual", // v3 ignora; v4 grava em leads.canal
       },
     }
   );
@@ -230,6 +239,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { erro: "duplicata", lead_existente: result.lead_existente },
       { status: 409 }
+    );
+  }
+
+  // Idempotência (v4): lead já existente para o mesmo identificador externo.
+  if (result.status === "ja_processado") {
+    return NextResponse.json(
+      { status: "ja_processado", lead_id: result.lead_id, email_notificacao: "nao_enviado" },
+      { status: 200 }
     );
   }
 

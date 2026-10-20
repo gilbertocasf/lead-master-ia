@@ -6,8 +6,9 @@ import { revalidatePath } from "next/cache";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   if (isMockMode) {
     return NextResponse.json({ erro: "supabase_nao_configurado" }, { status: 503 });
   }
@@ -76,8 +77,9 @@ export async function DELETE(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   if (isMockMode) {
     return NextResponse.json(
       { erro: "supabase_nao_configurado" },

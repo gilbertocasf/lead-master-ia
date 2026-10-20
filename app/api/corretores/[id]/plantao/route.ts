@@ -34,8 +34,9 @@ function revalidar() {
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   if (isMockMode) {
     return NextResponse.json({ erro: "supabase_nao_configurado" }, { status: 503 });
   }

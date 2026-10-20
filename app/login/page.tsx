@@ -5,11 +5,10 @@ import { isMockMode } from "@/lib/supabase";
 import { login } from "./actions";
 import PasswordInput from "./PasswordInput";
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
+export default async function LoginPage(props: {
+  searchParams: Promise<{ error?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   // Mock mode (dev local sem Supabase): redireciona direto para o app.
   if (isMockMode) redirect("/");
 

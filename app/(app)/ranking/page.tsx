@@ -8,11 +8,10 @@ import { RankingItem } from "@/lib/types";
 
 export const metadata = { title: "Ranking VGV" };
 
-export default async function RankingPage({
-  searchParams,
-}: {
-  searchParams: { equipe?: string };
+export default async function RankingPage(props: {
+  searchParams: Promise<{ equipe?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const { dados, usuario, semEquipe } = await fetchTudoEscopado();
 
   if (usuario?.role === "corretor" || usuario?.role === "captador") {

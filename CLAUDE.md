@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm install       # install dependencies
 npm run dev       # start dev server at http://localhost:3000
 npm run build     # production build
-npm run lint      # ESLint via next lint
+npm run lint      # ESLint 9 (eslint.config.mjs)
 ```
 
 There is no test suite in this project.
@@ -106,6 +106,7 @@ Implementar nesta ordem:
 - **`valor_vgv` em `vendas`**: a coluna manteve o nome original após a migration 002 (que não renomeia colunas). `fetchVendas()` seleciona `valor_vgv` — correto. O arquivo `supabase/schema.v2.sql` planejou renomear para `valor`, mas nunca foi aplicado.
 - **`schema.v2.sql` não deve ser aplicado**: começa com `DROP TABLE ... CASCADE`. Se executado sobre o banco com dados, apaga tudo. O banco usa as migrations, não o schema.v2.
 - **Sem suíte de testes**: a validação é manual (ver roteiro de demo e checklist de go-live).
+- **Next 16**: `cookies()`, `headers()`, `params` e `searchParams` são assíncronos (sempre com `await`). `middleware.ts` está obsoleto em favor de `proxy.ts` (que roda em Node, não em Edge); o build só avisa, a troca não foi feita. Exige Node 20.9 ou superior na Vercel. Se o `next dev` falhar com erro de fonte do `next/font/google`, apagar a pasta `.next`.
 
 ---
 
@@ -121,7 +122,7 @@ Implementar nesta ordem:
 
 ## Architecture
 
-**Lead Master IA** is a real-estate lead distribution platform built with Next.js 14 App Router, TypeScript, and Tailwind CSS. It has no external UI library — all icons are inline SVG.
+**Lead Master IA** is a real-estate lead distribution platform built with Next.js 16 App Router (React 19), TypeScript, and Tailwind CSS. It has no external UI library — all icons are inline SVG.
 
 ### Data layer (dual-mode)
 

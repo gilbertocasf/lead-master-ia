@@ -8,7 +8,7 @@ O produto resolve um problema operacional real: leads que chegam via Meta Ads, W
 
 ## Stack
 
-- **Next.js 14** (App Router, Server Components)
+- **Next.js 16** (App Router, Server Components, React 19)
 - **TypeScript**
 - **Tailwind CSS** — tema dark customizado, sem dependência de UI externa
 - **Supabase** (Postgres + Auth + RLS)

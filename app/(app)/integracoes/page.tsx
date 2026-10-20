@@ -143,7 +143,7 @@ export default async function IntegracoesPage() {
   const configurado: Record<string, boolean> = {};
   for (const v of VARIAVEIS) configurado[v.nome] = Boolean(process.env[v.nome]);
 
-  const h = headers();
+  const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const urlWebhook = host ? `https://${host}/api/webhooks/meta` : "/api/webhooks/meta";
 

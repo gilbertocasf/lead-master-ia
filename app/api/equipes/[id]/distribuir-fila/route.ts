@@ -17,8 +17,9 @@ interface RpcDistribuirFila {
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   if (isMockMode) {
     return NextResponse.json({ erro: "supabase_nao_configurado" }, { status: 503 });
   }

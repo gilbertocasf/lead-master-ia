@@ -28,6 +28,7 @@ export function PlantaoToggle({ corretorId, emPlantao, nome }: Props) {
 
   // Mantém o estado alinhado com o servidor após router.refresh()
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLigado(emPlantao);
   }, [emPlantao]);
 

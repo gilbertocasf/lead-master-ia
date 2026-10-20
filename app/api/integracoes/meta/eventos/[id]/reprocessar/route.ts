@@ -18,8 +18,9 @@ const PRAZO_MS = 9000;
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   const inicio = Date.now();
 
   if (isMockMode) {

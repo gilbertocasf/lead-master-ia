@@ -102,7 +102,8 @@ function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode
   );
 }
 
-export default async function LeadDetalhePage({ params }: { params: { id: string } }) {
+export default async function LeadDetalhePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (isMockMode || !UUID_RE.test(params.id)) notFound();
 
   const sb = createSupabaseServer();

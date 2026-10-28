@@ -174,7 +174,7 @@ export function NovoLeadModal({ equipes, corretores, modoCaptador = false }: Nov
           />
 
           {/* Painel */}
-          <div className="relative w-full max-w-md rounded-2xl border border-base-border bg-base-surface shadow-2xl">
+          <div className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-base-border bg-base-surface shadow-card">
             {/* Cabeçalho */}
             <div className="flex items-center justify-between border-b border-base-border px-5 py-4">
               <h2 className="font-display text-base font-semibold text-ink">
@@ -255,7 +255,7 @@ export function NovoLeadModal({ equipes, corretores, modoCaptador = false }: Nov
               </div>
 
               {/* Origem + Equipe */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-ink-muted">
                     Origem *
@@ -320,7 +320,7 @@ export function NovoLeadModal({ equipes, corretores, modoCaptador = false }: Nov
                   value={form.faixa_valor}
                   onChange={campo("faixa_valor")}
                   className={inputCls}
-                  placeholder="Ex.: R$ 400–600 mil"
+                  placeholder="Ex.: R$ 400 a 600 mil"
                 />
               </div>
 

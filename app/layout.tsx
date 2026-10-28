@@ -16,9 +16,13 @@ const display = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Lead Master IA — Gestão imobiliária",
+  title: {
+    default: "Lead Master IA",
+    template: "%s · Lead Master IA",
+  },
   description:
-    "Plataforma de gestão de leads, pipeline e ranking VGV para imobiliárias.",
+    "Distribuição automática de leads entre equipes e corretores de plantão.",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

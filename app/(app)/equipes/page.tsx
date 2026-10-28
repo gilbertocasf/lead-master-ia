@@ -6,6 +6,8 @@ import { ExcluirEquipeModal } from "@/components/ExcluirEquipeModal";
 import { fetchTudoEscopado, getRanking } from "@/lib/supabase-queries";
 import { formatBRLCompact } from "@/lib/format";
 
+export const metadata = { title: "Equipes" };
+
 export default async function EquipesPage() {
   const { dados, usuario, semEquipe } = await fetchTudoEscopado();
 
@@ -17,7 +19,7 @@ export default async function EquipesPage() {
           title="Equipes"
           description="Estrutura das equipes comerciais."
         />
-        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
+        <div className="rounded-2xl border border-base-border bg-base-surface px-5 py-4">
           <p className="text-sm font-semibold text-ink-muted">Área administrativa</p>
           <p className="mt-1 text-xs text-ink-muted">
             Disponível apenas para administradores e gestores.
@@ -35,10 +37,10 @@ export default async function EquipesPage() {
           title="Equipes"
           description="Estrutura das equipes comerciais."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -47,10 +49,12 @@ export default async function EquipesPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -71,7 +75,7 @@ export default async function EquipesPage() {
   const descricao =
     usuario?.role === "gestor" && equipes.length === 1
       ? `Você gerencia a equipe ${equipes[0].nome}. Acompanhe os corretores e a ordem de plantão.`
-      : "A imobiliária opera com múltiplas equipes. Cada gerente distribui os leads da sua fila seguindo a ordem de plantão.";
+      : "Cada equipe tem a própria fila. O sistema entrega cada lead ao corretor em plantão que está há mais tempo sem receber; no empate, vale a ordem de plantão.";
 
   return (
     <>
@@ -98,7 +102,7 @@ export default async function EquipesPage() {
             <Card key={eq.id}>
               <CardHeader
                 title={eq.nome}
-                subtitle={`Gerente: ${gerente?.nome ?? "—"}`}
+                subtitle={`Gerente: ${gerente?.nome || "Não informado"}`}
                 action={<span className="h-3 w-3 rounded-full" style={{ backgroundColor: eq.cor }} />}
               />
 
@@ -122,11 +126,14 @@ export default async function EquipesPage() {
                   Ordem de plantão
                 </div>
                 <div className="space-y-1.5">
+                  {membros.length === 0 && (
+                    <p className="px-2 py-1.5 text-sm text-ink-faint">Nenhum corretor ativo nesta equipe.</p>
+                  )}
                   {membros.map((m) => (
                     <div key={m.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-base-raised/50">
                       <span className="tnum w-5 text-center text-xs font-semibold text-ink-faint">{m.ordemPlantao}</span>
                       <Avatar iniciais={m.avatarIniciais} cor={eq.cor} size={30} />
-                      <span className="flex-1 text-sm text-ink">{m.nome}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-ink">{m.nome}</span>
                       {m.emPlantao ? (
                         <span className="h-2 w-2 rounded-full bg-win" title="Em plantão" />
                       ) : (

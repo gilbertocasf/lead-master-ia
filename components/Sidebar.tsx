@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/login/actions";
 import type { UserProfile } from "@/lib/auth";
+import { isMockMode } from "@/lib/supabase";
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "Administrador",
@@ -25,6 +26,8 @@ const NAV_TODOS = [
   { href: "/ranking", label: "Ranking VGV", icon: TrophyIcon },
 ];
 
+const NAV_ADMIN = [{ href: "/integracoes", label: "Integrações", icon: PlugIcon }];
+
 const HREFS_RESTRITO = new Set(["/", "/leads", "/pipeline"]);
 
 export function Sidebar({
@@ -41,7 +44,9 @@ export function Sidebar({
   const nav =
     profile?.role === "corretor" || profile?.role === "captador"
       ? NAV_TODOS.filter((item) => HREFS_RESTRITO.has(item.href))
-      : NAV_TODOS;
+      : profile?.role === "admin"
+        ? [...NAV_TODOS, ...NAV_ADMIN]
+        : NAV_TODOS;
 
   return (
     <>
@@ -68,7 +73,7 @@ export function Sidebar({
             <div className="font-display text-sm font-bold tracking-tight text-ink">
               Lead Master <span className="text-gold">IA</span>
             </div>
-            <div className="text-[11px] text-ink-faint">Gestão imobiliária</div>
+            <div className="text-[11px] text-ink-faint">Distribuição de leads</div>
           </div>
         </div>
 
@@ -103,14 +108,18 @@ export function Sidebar({
         <div className="border-t border-base-border px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/15 font-display text-xs font-semibold text-gold ring-1 ring-gold/40">
-              {profile ? iniciais(profile.nome) : "—"}
+              {profile ? iniciais(profile.nome) : <PersonIcon className="h-4 w-4" />}
             </div>
             <div className="min-w-0 flex-1 leading-tight">
               <div className="truncate text-sm font-medium text-ink">
-                {profile ? profile.nome : "Modo Dev"}
+                {profile ? profile.nome : isMockMode ? "Modo local" : "Perfil não carregado"}
               </div>
               <div className="text-[11px] text-ink-faint">
-                {profile ? ROLE_LABEL[profile.role] ?? profile.role : "sem autenticação"}
+                {profile
+                  ? ROLE_LABEL[profile.role] ?? profile.role
+                  : isMockMode
+                    ? "Dados de exemplo, sem banco"
+                    : "Entre novamente"}
               </div>
             </div>
             {profile && (
@@ -118,6 +127,7 @@ export function Sidebar({
                 <button
                   type="submit"
                   title="Sair"
+                  aria-label="Sair"
                   className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-base-raised hover:text-ink"
                 >
                   <LogoutIcon className="h-4 w-4" />
@@ -176,6 +186,20 @@ function TrophyIcon({ className }: IconProps) {
       <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" />
       <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
       <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  );
+}
+function PlugIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 2v6" /><path d="M15 2v6" /><path d="M6 8h12v4a6 6 0 0 1-12 0V8z" /><path d="M12 18v4" />
+    </svg>
+  );
+}
+function PersonIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="8" r="4" /><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
     </svg>
   );
 }

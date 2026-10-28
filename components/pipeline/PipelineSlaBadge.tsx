@@ -18,6 +18,8 @@ function getBaseTimestamp(lead: Lead) {
 
 export function PipelineSlaBadge({ lead }: { lead: Lead }) {
   const baseTimestamp = getBaseTimestamp(lead);
+  // Server Component: Date.now() roda uma vez por requisição, não a cada re-render.
+  // eslint-disable-next-line react-hooks/purity
   const minutes = Math.max(0, Math.round((Date.now() - baseTimestamp) / 60000));
   const text = getSlaText(minutes);
   const colorClass = getSlaColor(minutes);

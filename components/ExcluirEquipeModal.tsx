@@ -87,7 +87,7 @@ export function ExcluirEquipeModal({ equipe }: Props) {
             aria-hidden="true"
           />
 
-          <div className="relative w-full max-w-sm rounded-2xl border border-base-border bg-base-surface shadow-2xl">
+          <div className="relative w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-base-border bg-base-surface shadow-card">
             <div className="flex items-center justify-between border-b border-base-border px-5 py-4">
               <div>
                 <h2 className="font-display text-base font-semibold text-ink">
@@ -127,7 +127,7 @@ export function ExcluirEquipeModal({ equipe }: Props) {
                     <p className="font-medium text-ink">O que acontece ao remover:</p>
                     <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
                       <li>A equipe será <strong>desativada</strong> e não aparecerá para novos cadastros.</li>
-                      <li>Se houver corretores ativos, a remoção será <strong>bloqueada</strong> — transfira-os primeiro.</li>
+                      <li>Se houver corretores ativos, a remoção será <strong>bloqueada</strong>: transfira-os primeiro.</li>
                       <li>O <strong>histórico de leads</strong> da equipe será preservado.</li>
                       <li>Corretores inativos vinculados não são apagados automaticamente.</li>
                     </ul>

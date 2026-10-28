@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { DistribuirFilaButton } from "@/components/DistribuirFilaButton";
+import { AtribuirLeadModal } from "@/components/AtribuirLeadModal";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Avatar } from "@/components/ui/Avatar";
@@ -8,6 +11,8 @@ import {
   getProximoPlantao,
 } from "@/lib/supabase-queries";
 import { timeAgo } from "@/lib/format";
+
+export const metadata = { title: "Leads" };
 
 export default async function LeadsPage() {
   const { dados, usuario, semEquipe, semCorretorVinculado } =
@@ -22,10 +27,10 @@ export default async function LeadsPage() {
           title="Leads"
           description="Seus leads atribuídos."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -34,10 +39,12 @@ export default async function LeadsPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">Usuário não vinculado</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -49,12 +56,12 @@ export default async function LeadsPage() {
         <PageHeader
           eyebrow="Captação"
           title="Leads"
-          description="O gerente cadastra o lead e o sistema distribui automaticamente ao próximo corretor de plantão."
+          description="Cada lead cadastrado aqui ou recebido da Meta entra na fila da equipe e vai para o próximo corretor de plantão."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -63,12 +70,14 @@ export default async function LeadsPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">
-            Conta sem equipe vinculada
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">
+              Conta sem equipe vinculada
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -138,7 +147,7 @@ export default async function LeadsPage() {
                         <td className="hidden px-5 py-3 md:table-cell">
                           <span className="inline-flex items-center gap-1.5 text-ink-muted">
                             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: equipe?.cor }} />
-                            {equipe?.nome ?? "—"}
+                            {equipe?.nome ?? "Sem equipe"}
                           </span>
                         </td>
                         <td className="hidden px-5 py-3 text-ink-muted md:table-cell">
@@ -146,7 +155,7 @@ export default async function LeadsPage() {
                             ? <span className="text-warn">Aguardando</span>
                             : corretor
                               ? corretor.nome
-                              : <span className="text-ink-faint">—</span>
+                              : <span className="text-ink-faint">Corretor inativo</span>
                           }
                         </td>
                         <td className="px-5 py-3">
@@ -210,7 +219,12 @@ export default async function LeadsPage() {
                               cor={equipe?.cor}
                             />
                             <div>
-                              <div className="font-medium text-ink">{lead.nome}</div>
+                              <Link
+                                href={`/leads/${lead.id}`}
+                                className="font-medium text-ink hover:text-action hover:underline"
+                              >
+                                {lead.nome}
+                              </Link>
                               <div className="text-xs text-ink-muted">{lead.telefone}</div>
                             </div>
                           </div>
@@ -242,7 +256,22 @@ export default async function LeadsPage() {
   const getCorretorInfo = (id: string | null) =>
     id ? dados.corretores.find((c) => c.id === id) ?? null : null;
 
-  const naFila = leadsVisiveis.filter((l) => l.corretorId === null);
+  // Corretores ativos da equipe, para o modal de atribuição (em plantão primeiro)
+  const corretoresDaEquipe = (equipeId: string) =>
+    dados.corretores
+      .filter((c) => c.equipeId === equipeId && c.ativo)
+      .sort(
+        (a, b) =>
+          Number(b.emPlantao) - Number(a.emPlantao) ||
+          a.nome.localeCompare(b.nome, "pt-BR")
+      )
+      .map((c) => ({ id: c.id, nome: c.nome, emPlantao: c.emPlantao }));
+
+  // Mesma regra de distribuir_fila_equipe: sem corretor e ainda em aberto.
+  // Só esses leads aparecem na fila e podem ser atribuídos manualmente.
+  const estaNaFila = (l: (typeof leadsVisiveis)[number]) =>
+    l.corretorId === null && l.status !== "fechado" && l.status !== "perdido";
+  const naFila = leadsVisiveis.filter(estaNaFila);
   const distribuidos = leadsVisiveis.filter((l) => l.corretorId !== null);
 
   return (
@@ -250,7 +279,7 @@ export default async function LeadsPage() {
       <PageHeader
         eyebrow="Captação"
         title="Leads"
-        description="O gerente cadastra o lead e o sistema distribui automaticamente ao próximo corretor de plantão."
+        description="Cada lead cadastrado aqui ou recebido da Meta entra na fila da equipe e vai para o próximo corretor de plantão."
         action={
           <NovoLeadModal equipes={equipesVisiveis} corretores={corretoresParaModal} />
         }
@@ -264,16 +293,19 @@ export default async function LeadsPage() {
           return (
             <Card key={eq.id}>
               <CardHeader
-                title={`Fila — ${eq.nome}`}
+                title={`Fila: ${eq.nome}`}
                 subtitle={`${fila.length} ${fila.length === 1 ? "lead aguardando" : "leads aguardando"} distribuição`}
                 action={
-                  <span
-                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-                    style={{ backgroundColor: `${eq.cor}1A`, color: eq.cor }}
-                  >
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: eq.cor }} />
-                    {fila.length}
-                  </span>
+                  <div className="flex items-start gap-2">
+                    {fila.length > 0 && <DistribuirFilaButton equipeId={eq.id} />}
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                      style={{ backgroundColor: `${eq.cor}1A`, color: eq.cor }}
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: eq.cor }} />
+                      {fila.length}
+                    </span>
+                  </div>
                 }
               />
               {proximo && fila.length > 0 && (
@@ -301,7 +333,12 @@ export default async function LeadsPage() {
                       cor={eq.cor}
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-ink">{lead.nome}</div>
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="block truncate text-sm font-medium text-ink hover:text-action hover:underline"
+                      >
+                        {lead.nome}
+                      </Link>
                       <div className="truncate text-xs text-ink-muted">
                         {lead.interesse} • {lead.origem}
                       </div>
@@ -309,12 +346,14 @@ export default async function LeadsPage() {
                     <div className="hidden text-right text-xs text-ink-faint sm:block">
                       {timeAgo(lead.criadoEm)}
                     </div>
-                    <span
-                      className="whitespace-nowrap rounded-lg border border-base-border bg-base-raised px-3 py-1.5 text-xs font-medium text-ink-faint"
-                      title="A distribuição automática ocorre assim que houver corretor em plantão nesta equipe."
-                    >
-                      Aguardando plantão
+                    <span className="hidden whitespace-nowrap rounded-full bg-warn/15 px-2.5 py-1 text-[11px] font-medium text-warn sm:inline">
+                      Na fila
                     </span>
+                    <AtribuirLeadModal
+                      leadId={lead.id}
+                      leadNome={lead.nome}
+                      corretores={corretoresDaEquipe(eq.id)}
+                    />
                   </div>
                 ))}
               </div>
@@ -348,22 +387,29 @@ export default async function LeadsPage() {
                 return (
                   <tr key={lead.id} className="hover:bg-base-raised/40">
                     <td className="px-5 py-3">
-                      <div className="font-medium text-ink">{lead.nome}</div>
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="font-medium text-ink hover:text-action hover:underline"
+                      >
+                        {lead.nome}
+                      </Link>
                       <div className="text-xs text-ink-muted">{lead.telefone}</div>
                     </td>
                     <td className="px-5 py-3 text-ink-muted">{lead.origem}</td>
                     <td className="hidden px-5 py-3 md:table-cell">
                       <span className="inline-flex items-center gap-1.5 text-ink-muted">
                         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: equipe?.cor }} />
-                        {equipe?.nome}
+                        {equipe?.nome ?? "Sem equipe"}
                       </span>
                     </td>
                     <td className="hidden px-5 py-3 text-ink-muted md:table-cell">
-                      {lead.corretorId === null
+                      {estaNaFila(lead)
                         ? <span className="text-warn">Na fila</span>
-                        : corretor
+                        : lead.corretorId !== null && corretor
                           ? corretor.nome
-                          : <span className="text-ink-faint">—</span>
+                          : <span className="text-ink-faint">
+                              {lead.corretorId === null ? "Sem corretor" : "Corretor inativo"}
+                            </span>
                       }
                     </td>
                     <td className="px-5 py-3">

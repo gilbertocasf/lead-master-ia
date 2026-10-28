@@ -98,7 +98,7 @@ export function SetupClienteForm() {
               name="nome_admin"
               required
               className={inputCls}
-              placeholder="Ex.: João Silva"
+              placeholder="Nome completo"
             />
           </div>
           <div>
@@ -110,7 +110,7 @@ export function SetupClienteForm() {
               name="email_admin"
               required
               className={inputCls}
-              placeholder="admin@imobiliaria.com"
+              placeholder="E-mail do administrador"
             />
           </div>
           <div>

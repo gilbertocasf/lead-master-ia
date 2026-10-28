@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
@@ -5,11 +6,12 @@ import { fetchTudoEscopado, getRanking } from "@/lib/supabase-queries";
 import { formatBRL, formatBRLCompact } from "@/lib/format";
 import { RankingItem } from "@/lib/types";
 
-export default async function RankingPage({
-  searchParams,
-}: {
-  searchParams: { equipe?: string };
+export const metadata = { title: "Ranking VGV" };
+
+export default async function RankingPage(props: {
+  searchParams: Promise<{ equipe?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const { dados, usuario, semEquipe } = await fetchTudoEscopado();
 
   if (usuario?.role === "corretor" || usuario?.role === "captador") {
@@ -20,7 +22,7 @@ export default async function RankingPage({
           title="Ranking VGV"
           description="Classificação por valor de vendas fechadas."
         />
-        <div className="rounded-2xl border border-base-border bg-base-surface px-6 py-10 text-center">
+        <div className="rounded-2xl border border-base-border bg-base-surface px-5 py-4">
           <p className="text-sm font-semibold text-ink-muted">Área administrativa</p>
           <p className="mt-1 text-xs text-ink-muted">
             Ranking disponível para administradores e gestores.
@@ -38,10 +40,10 @@ export default async function RankingPage({
           title="Ranking VGV"
           description="Classificação por valor de vendas fechadas."
         />
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-6 py-10 text-center">
+        <div className="flex items-start gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-5 py-4">
           <svg
             viewBox="0 0 24 24"
-            className="mx-auto mb-3 h-8 w-8 text-warn"
+            className="mt-0.5 h-5 w-5 shrink-0 text-warn"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -50,10 +52,12 @@ export default async function RankingPage({
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-warn">Conta sem equipe vinculada</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Seu acesso ainda não foi configurado. Solicite ajuste ao administrador.
+            </p>
+          </div>
         </div>
       </>
     );
@@ -73,19 +77,19 @@ export default async function RankingPage({
       <PageHeader
         eyebrow="Reconhecimento"
         title="Ranking VGV"
-        description="Classificação por valor de vendas fechadas no período. Considera apenas vendas — locações não entram no ranking."
+        description="Classificação por valor de vendas fechadas. Locações não entram no ranking."
         action={
-          <div className="flex gap-1 rounded-xl border border-base-border bg-base-surface p-1 text-sm">
+          <div className="flex flex-wrap gap-1 rounded-xl border border-base-border bg-base-surface p-1 text-sm">
             {!isGestorEscopado && (
-              <a
+              <Link
                 href="/ranking"
                 className={`rounded-lg px-3 py-1.5 font-medium ${!equipeAtiva ? "bg-action text-white" : "text-ink-muted hover:text-ink"}`}
               >
                 Geral
-              </a>
+              </Link>
             )}
             {dados.equipes.map((eq) => (
-              <a
+              <Link
                 key={eq.id}
                 href={isGestorEscopado ? "/ranking" : `/ranking?equipe=${eq.id}`}
                 className={`rounded-lg px-3 py-1.5 font-medium ${
@@ -95,11 +99,17 @@ export default async function RankingPage({
                 }`}
               >
                 {eq.nome}
-              </a>
+              </Link>
             ))}
           </div>
         }
       />
+
+      {ranking.length === 0 && (
+        <div className="rounded-2xl border border-base-border bg-base-surface px-5 py-4 text-sm text-ink-muted">
+          Nenhuma venda fechada {equipeAtiva ? `na equipe ${equipeAtiva.nome}` : "ainda"}. O ranking começa com a primeira venda registrada.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {segundo && <PodiumCard item={segundo} place="2º" />}
@@ -107,8 +117,12 @@ export default async function RankingPage({
         {terceiro && <PodiumCard item={terceiro} place="3º" />}
       </div>
 
+      {ranking.length > 0 && (
       <Card className="mt-6">
-        <CardHeader title="Classificação completa" subtitle={`${ranking.length} corretores com vendas no período`} />
+        <CardHeader
+          title="Classificação completa"
+          subtitle={`${ranking.length} ${ranking.length === 1 ? "corretor" : "corretores"} com vendas fechadas`}
+        />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -134,7 +148,7 @@ export default async function RankingPage({
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <Avatar iniciais={r.avatarIniciais} cor={top3 ? "#D4A636" : r.equipeCor} size={32} />
-                        <span className="font-medium text-ink">{r.nome}</span>
+                        <span className="min-w-0 truncate font-medium text-ink">{r.nome}</span>
                       </div>
                     </td>
                     <td className="hidden px-5 py-3 sm:table-cell">
@@ -155,6 +169,7 @@ export default async function RankingPage({
           </table>
         </div>
       </Card>
+      )}
     </>
   );
 }

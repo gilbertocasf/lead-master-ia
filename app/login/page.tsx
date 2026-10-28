@@ -1,14 +1,14 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { isMockMode } from "@/lib/supabase";
 import { login } from "./actions";
 import PasswordInput from "./PasswordInput";
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
+export default async function LoginPage(props: {
+  searchParams: Promise<{ error?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   // Mock mode (dev local sem Supabase): redireciona direto para o app.
   if (isMockMode) redirect("/");
 
@@ -60,7 +60,7 @@ export default async function LoginPage({
               type="email"
               required
               autoComplete="email"
-              placeholder="seu@email.com"
+              placeholder="Seu e-mail de acesso"
               className="w-full rounded-xl border border-base-border bg-base-surface px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-action focus:outline-none focus:ring-1 focus:ring-action"
             />
           </div>
@@ -85,6 +85,14 @@ export default async function LoginPage({
 
         <p className="mt-6 text-center text-xs text-ink-faint">
           Sem cadastro público. Solicite acesso ao administrador.
+        </p>
+        <p className="mt-2 text-center text-xs">
+          <Link
+            href="/privacidade"
+            className="text-ink-faint underline-offset-2 hover:text-ink-muted hover:underline"
+          >
+            Política de privacidade
+          </Link>
         </p>
       </div>
     </div>

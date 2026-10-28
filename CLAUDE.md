@@ -42,9 +42,9 @@ Não tratar como CRM genérico. CRMs genéricos (RD Station, Pipedrive) não tê
 - App publicado na Vercel (a partir de `main`) e conectado ao Supabase real
 - Leitura de dados real funcionando; autenticação SSR (login/logout, middleware, RLS)
 - **Escrita implementada**: cadastro de lead, distribuição automática, pipeline com histórico, plantão pelo app, distribuição da fila e atribuição manual
-- **Migrations 001–011 em produção.** A 009 (segurança por equipe) foi aplicada em 20/10/2026 e a 010 e a 011 (estrutura Meta, RPCs de distribuição) em 27/10/2026, todas conferidas pelo item 4 de `docs/setup/aplicar-migrations-009-011.md`. O código que usa a 010 e a 011 está no branch `feat/prontidao-meta-leads` (PR #1), ainda não mesclado em `main`
-- **Integração Meta (Lead Ads) implementada neste branch, aguardando configuração**: webhook `/api/webhooks/meta`, cron `/api/cron/meta`, tela `/integracoes`, página do lead `/leads/[id]`. Passo a passo em `docs/integracao-meta/configuracao.md` e `docs/integracao-meta/checklist-go-live.md`; contrato técnico em `docs/planejamento/contrato-tecnico-meta-leads.md`
-- `npm run build` e `npm run lint` rodam localmente e passaram em 27/10/2026 no branch `feat/prontidao-meta-leads`, já com Next.js 16; rodar de novo antes de publicar
+- **Migrations 001–011 em produção.** A 009 (segurança por equipe) foi aplicada em 20/10/2026 e a 010 e a 011 (estrutura Meta, RPCs de distribuição) em 27/10/2026, todas conferidas pelo item 4 de `docs/setup/aplicar-migrations-009-011.md`. O código que usa a 010 e a 011 entrou em `main` em 28/10/2026 (PR #1) e está em produção
+- **Integração Meta (Lead Ads) implementada, aguardando configuração**: webhook `/api/webhooks/meta`, cron `/api/cron/meta`, tela `/integracoes`, página do lead `/leads/[id]`. Passo a passo em `docs/integracao-meta/configuracao.md` e `docs/integracao-meta/checklist-go-live.md`; contrato técnico em `docs/planejamento/contrato-tecnico-meta-leads.md`
+- `npm run build` e `npm run lint` rodam localmente e passaram em 27/10/2026, já com Next.js 16; rodar de novo antes de publicar
 - A fase de auditorias estratégicas foi **concluída** (Fases 1 a 3.1-D)
 
 ---
@@ -98,7 +98,7 @@ Implementar nesta ordem:
 
 ## Riscos conhecidos
 
-- **Código novo sem teste com o Supabase real**: o branch `feat/prontidao-meta-leads` compila e passa no lint, mas login, plantão, fila e atribuição ainda não foram testados contra o banco real (inclusive depois da migração para o Next.js 16). Testar o preview antes de mesclar em `main` (a Vercel publica `main` automaticamente).
+- **Validação só manual**: em 28/10/2026 o preview do PR #1 foi testado contra o Supabase real (login, todas as telas, plantão, cadastro com distribuição, bloqueio de telefone repetido em 24h, `/integracoes`); a versão de celular não foi testada. A Vercel publica `main` automaticamente, então testar o preview antes de cada merge.
 - **Escopo do gestor após a 009**: gestor sem `equipe_id` não vê nenhum lead, corretor ou venda. Ao criar gestores, sempre definir a equipe.
 - **Integração Meta depende de configuração externa**: variáveis (`META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_ACCESS_TOKEN`, `CRON_SECRET`, `ALERTA_EMAILS`), app na Meta, webhook, instalação na Página e cron. Acesso Avançado (Análise do App e Verificação da Empresa) só é necessário para Páginas de terceiros.
 - **Cron e plano da Vercel**: no plano Hobby só cron diário; um `vercel.json` com cron mais frequente faz o deploy falhar. Por isso o repositório não traz `vercel.json`. Em Hobby, usar agendador externo chamando `GET /api/cron/meta` com `Authorization: Bearer <CRON_SECRET>`.
